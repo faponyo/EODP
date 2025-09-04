@@ -10,6 +10,7 @@ import AttendeeManagement from './components/AttendeeManagement';
 import VoucherManagement from './components/VoucherManagement';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
+import NoAccessPage from './components/NoAccessPage';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -306,6 +307,20 @@ function App() {
   const filteredAttendees = getFilteredAttendees();
   const filteredVouchers = getFilteredVouchers();
 
+  // Check if user has any access rights
+  const hasAnyAccess = () => {
+    if (!user) return false;
+    
+    // Admin and internal users always have access
+    if (user.role === 'admin' || user.role === 'internal') return true;
+    
+    // External users need assigned events
+    if (user.role === 'external') {
+      return user.assignedEventIds && user.assignedEventIds.length > 0;
+    }
+    
+    return false;
+  };
   const handleApproveRegistration = (attendeeId: string) => {
     setAttendees(attendees.map(attendee => {
       if (attendee.id === attendeeId) {
@@ -383,6 +398,14 @@ function App() {
     return <AuthForm />;
   }
 
+  // Show no access page if user has no rights
+  if (!hasAnyAccess()) {
+    return (
+      <Layout currentPage="no-access" onPageChange={() => {}} events={[]}>
+        <NoAccessPage />
+      </Layout>
+    );
+  }
   return (
     <Layout currentPage={currentPage} onPageChange={setCurrentPage} events={filteredEvents}>
       {currentPage === 'dashboard' && (
