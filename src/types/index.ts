@@ -68,6 +68,26 @@ export interface VoucherClaim {
   claimedBy: string;
 }
 
+export interface Subsidiary {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface SubsidiaryEmployee {
+  id: string;
+  subsidiaryId: string;
+  pfNumber: string;
+  name: string;
+  email: string;
+  department: string;
+  createdAt: string;
+  uploadedBy: string;
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;

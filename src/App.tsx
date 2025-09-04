@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './hooks/useAuth';
-import { Event, Attendee, Voucher } from './types';
+import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee } from './types';
 import { createVoucher } from './utils/voucher';
 import AuthForm from './components/AuthForm';
 import Layout from './components/Layout';
@@ -10,6 +10,7 @@ import AttendeeManagement from './components/AttendeeManagement';
 import VoucherManagement from './components/VoucherManagement';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
+import SubsidiaryManagement from './components/SubsidiaryManagement';
 import NoAccessPage from './components/NoAccessPage';
 import EventSelector from './components/EventSelector';
 
@@ -22,12 +23,16 @@ function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
+  const [subsidiaryEmployees, setSubsidiaryEmployees] = useState<SubsidiaryEmployee[]>([]);
 
   // Load data from localStorage on mount
   useEffect(() => {
     const storedEvents = localStorage.getItem('events');
     const storedAttendees = localStorage.getItem('attendees');
     const storedVouchers = localStorage.getItem('vouchers');
+    const storedSubsidiaries = localStorage.getItem('subsidiaries');
+    const storedSubsidiaryEmployees = localStorage.getItem('subsidiaryEmployees');
 
     if (storedEvents) {
       setEvents(JSON.parse(storedEvents));
@@ -37,6 +42,12 @@ function App() {
     }
     if (storedVouchers) {
       setVouchers(JSON.parse(storedVouchers));
+    }
+    if (storedSubsidiaries) {
+      setSubsidiaries(JSON.parse(storedSubsidiaries));
+    }
+    if (storedSubsidiaryEmployees) {
+      setSubsidiaryEmployees(JSON.parse(storedSubsidiaryEmployees));
     }
 
     // Initialize demo data if none exists
@@ -282,6 +293,39 @@ function App() {
     localStorage.setItem('users', JSON.stringify(updatedUsers));
   };
 
+  const handleCreateSubsidiary = (subsidiaryData: Omit<Subsidiary, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newSubsidiary: Subsidiary = {
+      ...subsidiaryData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id || '1',
+    };
+    setSubsidiaries([...subsidiaries, newSubsidiary]);
+  };
+
+  const handleUpdateSubsidiary = (id: string, subsidiaryData: Partial<Subsidiary>) => {
+    setSubsidiaries(subsidiaries.map(sub => 
+      sub.id === id ? { ...sub, ...subsidiaryData } : sub
+    ));
+  };
+
+  const handleDeleteSubsidiary = (id: string) => {
+    setSubsidiaries(subsidiaries.filter(sub => sub.id !== id));
+    // Also remove related employees
+    setSubsidiaryEmployees(subsidiaryEmployees.filter(emp => emp.subsidiaryId !== id));
+  };
+
+  const handleUploadEmployees = (subsidiaryId: string, employees: Omit<SubsidiaryEmployee, 'id' | 'subsidiaryId' | 'createdAt' | 'uploadedBy'>[]) => {
+    const newEmployees = employees.map(emp => ({
+      ...emp,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      subsidiaryId,
+      createdAt: new Date().toISOString(),
+      uploadedBy: user?.id || '1',
+    }));
+    setSubsidiaryEmployees([...subsidiaryEmployees, ...newEmployees]);
+  };
+
   // Filter data based on user role and permissions
   const getFilteredEvents = () => {
     if (user?.role === 'external' && user.assignedEventIds) {
@@ -486,6 +530,14 @@ function App() {
           onCreateUser={handleCreateUser}
           onUpdateUserStatus={handleUpdateUserStatus}
           onUpdateUser={handleUpdateUser}
+        />
+      )}
+      {currentPage === 'subsidiaries' && user?.role === 'admin' && (
+        <SubsidiaryManagement
+          onCreateSubsidiary={handleCreateSubsidiary}
+          onUpdateSubsidiary={handleUpdateSubsidiary}
+          onDeleteSubsidiary={handleDeleteSubsidiary}
+          onUploadEmployees={handleUploadEmployees}
         />
       )}
     </Layout>

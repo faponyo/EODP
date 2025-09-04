@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, LogOut, Calendar, Users, TicketIcon, BarChart3, UserCog, Menu, X } from 'lucide-react';
+import { User, LogOut, Calendar, Users, TicketIcon, BarChart3, UserCog, Menu, X, Building } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Event } from '../types';
 
@@ -24,9 +24,15 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
   ];
 
   // Add user management for admin users
-  const navigationItems = user?.role === 'admin' 
-    ? [...baseNavigationItems, { id: 'users', label: 'User Management', icon: UserCog }]
-    : baseNavigationItems;
+  let navigationItems = baseNavigationItems;
+  
+  if (user?.role === 'admin') {
+    navigationItems = [
+      ...baseNavigationItems,
+      { id: 'subsidiaries', label: 'Subsidiaries', icon: Building },
+      { id: 'users', label: 'User Management', icon: UserCog }
+    ];
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -23,6 +23,28 @@ const mockEmployeeDatabase = {
   'PF018': { name: 'Henry Garcia', email: 'henry.garcia@company.com', department: 'Customer Service' },
   'PF019': { name: 'Iris Chen', email: 'iris.chen@company.com', department: 'Legal' },
   'PF020': { name: 'Jack Wong', email: 'jack.wong@company.com', department: 'Research' },
+  
+  // Subsidiary employees (SUB001-SUB020)
+  'SUB001': { name: 'Alice Cooper', email: 'alice.cooper@subsidiary.com', department: 'Finance' },
+  'SUB002': { name: 'Bob Wilson', email: 'bob.wilson@subsidiary.com', department: 'HR' },
+  'SUB003': { name: 'Carol Martinez', email: 'carol.martinez@subsidiary.com', department: 'Marketing' },
+  'SUB004': { name: 'David Thompson', email: 'david.thompson@subsidiary.com', department: 'Operations' },
+  'SUB005': { name: 'Emma Rodriguez', email: 'emma.rodriguez@subsidiary.com', department: 'Sales' },
+  'SUB006': { name: 'Frank Anderson', email: 'frank.anderson@subsidiary.com', department: 'IT' },
+  'SUB007': { name: 'Grace Miller', email: 'grace.miller@subsidiary.com', department: 'Legal' },
+  'SUB008': { name: 'Henry Davis', email: 'henry.davis@subsidiary.com', department: 'Research' },
+  'SUB009': { name: 'Iris Johnson', email: 'iris.johnson@subsidiary.com', department: 'Customer Service' },
+  'SUB010': { name: 'Jack Brown', email: 'jack.brown@subsidiary.com', department: 'Finance' },
+  'SUB011': { name: 'Kate Wilson', email: 'kate.wilson@subsidiary.com', department: 'HR' },
+  'SUB012': { name: 'Leo Garcia', email: 'leo.garcia@subsidiary.com', department: 'Marketing' },
+  'SUB013': { name: 'Maya Lee', email: 'maya.lee@subsidiary.com', department: 'Operations' },
+  'SUB014': { name: 'Noah Taylor', email: 'noah.taylor@subsidiary.com', department: 'Sales' },
+  'SUB015': { name: 'Olivia Chen', email: 'olivia.chen@subsidiary.com', department: 'IT' },
+  'SUB016': { name: 'Paul Wong', email: 'paul.wong@subsidiary.com', department: 'Legal' },
+  'SUB017': { name: 'Quinn Smith', email: 'quinn.smith@subsidiary.com', department: 'Research' },
+  'SUB018': { name: 'Ruby Martinez', email: 'ruby.martinez@subsidiary.com', department: 'Customer Service' },
+  'SUB019': { name: 'Sam Thompson', email: 'sam.thompson@subsidiary.com', department: 'Finance' },
+  'SUB020': { name: 'Tina Rodriguez', email: 'tina.rodriguez@subsidiary.com', department: 'HR' },
 };
 
 export interface EmployeeData {
