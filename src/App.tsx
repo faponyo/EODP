@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher } from './types';
 import { createVoucher } from './utils/voucher';
@@ -12,7 +12,7 @@ import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
 
 function App() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   
   // State management
@@ -258,7 +258,7 @@ function App() {
     localStorage.setItem('users', JSON.stringify(users));
   };
 
-  const handleUpdateUserStatus = (userId: string, status: 'active' | 'disabled') => {
+  const handleUpdateUserStatus = useCallback((userId: string, status: 'active' | 'disabled') => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const updatedUsers = users.map((u: User) => 
       u.id === userId ? { ...u, status } : u
@@ -269,7 +269,7 @@ function App() {
     if (userId === user?.id && status === 'disabled') {
       logout();
     }
-  };
+  }, [user?.id, logout]);
 
   const handleUpdateUser = (userId: string, userData: Partial<User>) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
