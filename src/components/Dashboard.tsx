@@ -13,6 +13,8 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
   const stats = useMemo(() => {
     const totalEvents = events.length;
     const totalAttendees = attendees.length;
+    const approvedAttendees = attendees.filter(a => a.status === 'approved').length;
+    const pendingAttendees = attendees.filter(a => a.status === 'pending').length;
     const totalVouchers = vouchers.length;
     const claimedVouchers = vouchers.filter(v => v.isFullyClaimed).length;
     const totalDrinksClaimed = vouchers.reduce(
@@ -23,6 +25,8 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
     return {
       totalEvents,
       totalAttendees,
+      approvedAttendees,
+      pendingAttendees,
       totalVouchers,
       claimedVouchers,
       totalDrinksClaimed,
