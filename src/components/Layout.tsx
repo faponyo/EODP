@@ -6,9 +6,10 @@ interface LayoutProps {
   children: React.ReactNode;
   currentPage: string;
   onPageChange: (page: string) => void;
+  events?: Event[];
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
+const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, events = [] }) => {
   const { user, logout } = useAuth();
 
   const navigationItems = [
@@ -55,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
           <nav className="lg:w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <ul className="space-y-2">
-                {navigationItems.map((item) => {
+                {filteredNavigationItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <li key={item.id}>
@@ -74,6 +75,15 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
                   );
                 })}
               </ul>
+              
+              {user?.role === 'external' && user.assignedEventIds && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800 font-medium">External User Access</p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Limited to {user.assignedEventIds.length} assigned event{user.assignedEventIds.length === 1 ? '' : 's'}
+                  </p>
+                </div>
+              )}
             </div>
           </nav>
 

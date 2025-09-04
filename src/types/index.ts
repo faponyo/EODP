@@ -2,7 +2,11 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'internal' | 'external';
+  status: 'active' | 'disabled';
+  assignedEventIds?: string[];
+  createdAt: string;
+  createdBy?: string;
 }
 
 export interface Event {
@@ -25,11 +29,7 @@ export interface Attendee {
   department: string;
   registeredAt: string;
   voucherId: string;
-  status: 'pending' | 'approved' | 'rejected';
   submittedBy: string;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  rejectionReason?: string;
 }
 
 export interface Voucher {

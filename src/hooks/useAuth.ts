@@ -22,12 +22,13 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     // Simple authentication logic (in real app, this would call an API)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((u: User) => u.email === email);
+    const user = users.find((u: User) => u.email === email && u.status === 'active');
     
     // Demo credentials for testing
     const demoCredentials = [
       { email: 'admin@company.com', password: 'admin123' },
-      { email: 'user@company.com', password: 'user123' }
+      { email: 'internal@company.com', password: 'internal123' },
+      { email: 'external@company.com', password: 'external123' }
     ];
     
     const validDemo = demoCredentials.find(cred => cred.email === email && cred.password === password);
@@ -42,10 +43,13 @@ export const useAuth = () => {
     } else if (validDemo) {
       // Create user if demo credentials are used
       const demoUser: User = {
-        id: email === 'admin@company.com' ? '1' : '2',
+        id: email === 'admin@company.com' ? '1' : email === 'internal@company.com' ? '2' : '3',
         email,
-        name: email === 'admin@company.com' ? 'Admin User' : 'Regular User',
-        role: email === 'admin@company.com' ? 'admin' : 'user',
+        name: email === 'admin@company.com' ? 'Admin User' : email === 'internal@company.com' ? 'Internal User' : 'External User',
+        role: email === 'admin@company.com' ? 'admin' : email === 'internal@company.com' ? 'internal' : 'external',
+        status: 'active',
+        assignedEventIds: email === 'external@company.com' ? ['1'] : undefined,
+        createdAt: new Date().toISOString(),
       };
       
       localStorage.setItem('currentUser', JSON.stringify(demoUser));
@@ -70,7 +74,9 @@ export const useAuth = () => {
       id: Date.now().toString(),
       email,
       name,
-      role: 'user',
+      role: 'internal',
+      status: 'active',
+      createdAt: new Date().toISOString(),
     };
 
     users.push(newUser);

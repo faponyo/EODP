@@ -137,23 +137,6 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         </div>
       )}
 
-      {/* Pending Approvals Alert */}
-      {stats.pendingAttendees > 0 && user?.role === 'admin' && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-yellow-800">
-                {stats.pendingAttendees} registration{stats.pendingAttendees === 1 ? '' : 's'} awaiting your approval
-              </p>
-              <p className="text-xs text-yellow-700 mt-1">
-                Review pending registrations in the Attendees section
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {dashboardStats.map((stat) => {

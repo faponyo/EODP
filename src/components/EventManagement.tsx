@@ -143,7 +143,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Registration Open
                         </span>
-                        {pendingAttendees.length > 0 && (
+                  const eventAttendees = attendees.filter(a => a.eventId === event.id);
                           <p className="text-xs text-yellow-600 mt-1">
                             {pendingAttendees.length} pending approval
                           </p>

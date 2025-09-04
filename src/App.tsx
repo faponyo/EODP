@@ -212,39 +212,85 @@ function App() {
 
   const handleRegisterAttendee = (attendeeData: Omit<Attendee, 'id' | 'registeredAt' | 'voucherId'>) => {
     const attendeeId = Date.now().toString();
+    const voucherId = `voucher-${attendeeId}`;
     
     const newAttendee: Attendee = {
       ...attendeeData,
       id: attendeeId,
       registeredAt: new Date().toISOString(),
-      voucherId: '', // Will be assigned when approved
-      status: 'pending',
+      voucherId,
       submittedBy: user?.id || '1',
     };
 
     setAttendees([...attendees, newAttendee]);
+
+    // Create voucher immediately
+    const newVoucher = createVoucher(attendeeId, attendeeData.eventId);
+    newVoucher.id = voucherId;
+    setVouchers([...vouchers, newVoucher]);
   };
 
-  const handleApproveRegistration = (attendeeId: string) => {
-    const voucherId = `voucher-${attendeeId}`;
+  const handleCreateUser = (userData: Omit<User, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newUser: User = {
+      ...userData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id || '1',
+    };
     
-    setAttendees(attendees.map(attendee => {
-      if (attendee.id === attendeeId) {
-        return {
-          ...attendee,
-          status: 'approved' as const,
-          voucherId,
-          reviewedBy: user?.id || '1',
-          reviewedAt: new Date().toISOString(),
-        };
-      }
-      return attendee;
-    }));
+    // Update users in localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+  };
 
-    // Create voucher for approved attendee
-    const attendee = attendees.find(a => a.id === attendeeId);
-    if (attendee) {
-      const newVoucher = createVoucher(attendeeId, attendee.eventId);
+  const handleUpdateUserStatus = (userId: string, status: 'active' | 'disabled') => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: User) => 
+      u.id === userId ? { ...u, status } : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
+    // If current user is being disabled, log them out
+    if (userId === user?.id && status === 'disabled') {
+      logout();
+    }
+  };
+
+  const handleUpdateUser = (userId: string, userData: Partial<User>) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: User) => 
+      u.id === userId ? { ...u, ...userData } : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  };
+
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
+
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
+
+  const getFilteredVouchers = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
+      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
+    }
+    return vouchers;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const filteredVouchers = getFilteredVouchers();
       newVoucher.id = voucherId;
       setVouchers([...vouchers, newVoucher]);
     }
@@ -306,39 +352,48 @@ function App() {
   }
 
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
+    <Layout currentPage={currentPage} onPageChange={setCurrentPage} events={filteredEvents}>
       {currentPage === 'dashboard' && (
-        <Dashboard events={events} attendees={attendees} vouchers={vouchers} />
+        <Dashboard events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
       )}
       {currentPage === 'events' && (
         <EventManagement
-          events={events}
-          attendees={attendees}
+          events={filteredEvents}
+          attendees={filteredAttendees}
           onCreateEvent={handleCreateEvent}
           onUpdateEvent={handleUpdateEvent}
           onDeleteEvent={handleDeleteEvent}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'attendees' && (
         <AttendeeManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
+          events={filteredEvents}
+          attendees={filteredAttendees}
+          vouchers={filteredVouchers}
           onRegisterAttendee={handleRegisterAttendee}
-          onApproveRegistration={handleApproveRegistration}
-          onRejectRegistration={handleRejectRegistration}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'vouchers' && (
         <VoucherManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
+          events={filteredEvents}
+          attendees={filteredAttendees}
+          vouchers={filteredVouchers}
           onClaimDrink={handleClaimDrink}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'reports' && (
-        <Reports events={events} attendees={attendees} vouchers={vouchers} />
+        <Reports events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
+      )}
+      {currentPage === 'users' && user?.role === 'admin' && (
+        <UserManagement
+          events={events}
+          onCreateUser={handleCreateUser}
+          onUpdateUserStatus={handleUpdateUserStatus}
+          onUpdateUser={handleUpdateUser}
+        />
       )}
     </Layout>
   );

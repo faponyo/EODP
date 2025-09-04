@@ -10,6 +10,7 @@ interface VoucherManagementProps {
   attendees: Attendee[];
   vouchers: Voucher[];
   onClaimDrink: (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => void;
+  userRole: 'admin' | 'internal' | 'external';
 }
 
 const VoucherManagement: React.FC<VoucherManagementProps> = ({
@@ -17,6 +18,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
   attendees,
   vouchers,
   onClaimDrink,
+  userRole,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState('');
