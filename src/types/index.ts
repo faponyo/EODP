@@ -16,8 +16,17 @@ export interface Event {
   location: string;
   description: string;
   maxAttendees: number;
+  hasVouchers: boolean;
+  voucherCategories?: VoucherCategory[];
   createdAt: string;
   createdBy: string;
+}
+
+export interface VoucherCategory {
+  id: string;
+  name: string;
+  numberOfItems: number;
+  value: number;
 }
 
 export interface Attendee {

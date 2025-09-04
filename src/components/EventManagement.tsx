@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Users, Plus, Edit2, Trash2, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, Edit2, Trash2, Eye, TicketIcon, X } from 'lucide-react';
 import { Event, Attendee } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import EventTimer from './EventTimer';
@@ -29,6 +29,13 @@ const EventManagement: React.FC<EventManagementProps> = ({
     location: '',
     description: '',
     maxAttendees: 100,
+    hasVouchers: false,
+    voucherCategories: [] as Array<{
+      id: string;
+      name: string;
+      numberOfItems: number;
+      value: number;
+    }>,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -47,6 +54,8 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: '',
       description: '',
       maxAttendees: 100,
+      hasVouchers: false,
+      voucherCategories: [],
     });
     setShowForm(false);
   };
@@ -59,6 +68,8 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: event.location,
       description: event.description,
       maxAttendees: event.maxAttendees,
+      hasVouchers: event.hasVouchers || false,
+      voucherCategories: event.voucherCategories || [],
     });
     setShowForm(true);
   };
@@ -72,6 +83,37 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: '',
       description: '',
       maxAttendees: 100,
+      hasVouchers: false,
+      voucherCategories: [],
+    });
+  };
+
+  const addVoucherCategory = () => {
+    const newCategory = {
+      id: Date.now().toString(),
+      name: '',
+      numberOfItems: 1,
+      value: 0,
+    };
+    setFormData({
+      ...formData,
+      voucherCategories: [...formData.voucherCategories, newCategory],
+    });
+  };
+
+  const removeVoucherCategory = (categoryId: string) => {
+    setFormData({
+      ...formData,
+      voucherCategories: formData.voucherCategories.filter(cat => cat.id !== categoryId),
+    });
+  };
+
+  const updateVoucherCategory = (categoryId: string, field: string, value: string | number) => {
+    setFormData({
+      ...formData,
+      voucherCategories: formData.voucherCategories.map(cat =>
+        cat.id === categoryId ? { ...cat, [field]: value } : cat
+      ),
     });
   };
 
@@ -312,6 +354,119 @@ const EventManagement: React.FC<EventManagementProps> = ({
                 />
               </div>
 
+              {/* Voucher Configuration */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center space-x-3 mb-4">
+                  <input
+                    type="checkbox"
+                    id="hasVouchers"
+                    checked={formData.hasVouchers}
+                    onChange={(e) => {
+                      const hasVouchers = e.target.checked;
+                      setFormData({
+                        ...formData,
+                        hasVouchers,
+                        voucherCategories: hasVouchers ? formData.voucherCategories : [],
+                      });
+                    }}
+                    className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
+                  />
+                  <label htmlFor="hasVouchers" className="flex items-center text-sm font-medium text-gray-700">
+                    <TicketIcon className="h-4 w-4 mr-2" />
+                    Enable Vouchers for this Event
+                  </label>
+                </div>
+
+                {formData.hasVouchers && (
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-gray-900">Voucher Categories</h4>
+                      <button
+                        type="button"
+                        onClick={addVoucherCategory}
+                        className="bg-coop-600 text-white px-3 py-1 rounded text-sm hover:bg-coop-700 transition-colors flex items-center space-x-1"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Add Category</span>
+                      </button>
+                    </div>
+
+                    {formData.voucherCategories.length === 0 && (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        No voucher categories added yet. Click "Add Category" to create one.
+                      </div>
+                    )}
+
+                    {formData.voucherCategories.map((category, index) => (
+                      <div key={category.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="font-medium text-gray-800">Category {index + 1}</h5>
+                          <button
+                            type="button"
+                            onClick={() => removeVoucherCategory(category.id)}
+                            className="text-red-600 hover:text-red-800 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Category Name *
+                            </label>
+                            <input
+                              type="text"
+                              required={formData.hasVouchers}
+                              value={category.name}
+                              onChange={(e) => updateVoucherCategory(category.id, 'name', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                              placeholder="e.g., Soft Drinks, Meals"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Number of Items *
+                            </label>
+                            <input
+                              type="number"
+                              required={formData.hasVouchers}
+                              min="1"
+                              value={category.numberOfItems}
+                              onChange={(e) => updateVoucherCategory(category.id, 'numberOfItems', parseInt(e.target.value) || 1)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Value (KES) *
+                            </label>
+                            <input
+                              type="number"
+                              required={formData.hasVouchers}
+                              min="0"
+                              step="0.01"
+                              value={category.value}
+                              onChange={(e) => updateVoucherCategory(category.id, 'value', parseFloat(e.target.value) || 0)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {formData.hasVouchers && formData.voucherCategories.length === 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-yellow-800 text-sm">
+                          <strong>Note:</strong> At least one voucher category is required when vouchers are enabled.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
@@ -322,6 +477,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={formData.hasVouchers && formData.voucherCategories.length === 0}
                   className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors"
                 >
                   {editingEvent ? 'Update Event' : 'Create Event'}
