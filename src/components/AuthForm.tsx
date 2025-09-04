@@ -22,9 +22,9 @@ const AuthForm: React.FC = () => {
     try {
       let result;
       if (isLogin) {
-        result = login(formData.email, formData.password);
+        result = await login(formData.email, formData.password);
       } else {
-        result = register(formData.email, formData.password, formData.name);
+        result = await register(formData.email, formData.password, formData.name);
       }
 
       if (!result.success) {

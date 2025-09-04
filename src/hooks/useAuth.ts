@@ -19,10 +19,18 @@ export const useAuth = () => {
     }
   }, []);
 
-  const login = (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     // Simple authentication logic (in real app, this would call an API)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find((u: User) => u.email === email);
+    
+    // Demo credentials for testing
+    const demoCredentials = [
+      { email: 'admin@company.com', password: 'admin123' },
+      { email: 'user@company.com', password: 'user123' }
+    ];
+    
+    const validDemo = demoCredentials.find(cred => cred.email === email && cred.password === password);
     
     if (user) {
       localStorage.setItem('currentUser', JSON.stringify(user));
@@ -31,12 +39,27 @@ export const useAuth = () => {
         isAuthenticated: true,
       });
       return { success: true };
+    } else if (validDemo) {
+      // Create user if demo credentials are used
+      const demoUser: User = {
+        id: email === 'admin@company.com' ? '1' : '2',
+        email,
+        name: email === 'admin@company.com' ? 'Admin User' : 'Regular User',
+        role: email === 'admin@company.com' ? 'admin' : 'user',
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(demoUser));
+      setAuthState({
+        user: demoUser,
+        isAuthenticated: true,
+      });
+      return { success: true };
     }
     
     return { success: false, error: 'Invalid credentials' };
   };
 
-  const register = (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, name: string) => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     if (users.find((u: User) => u.email === email)) {
