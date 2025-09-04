@@ -554,4 +554,4 @@ const EventManagement: React.FC<EventManagementProps> = ({
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
