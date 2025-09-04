@@ -293,18 +293,19 @@ function App() {
   const filteredVouchers = getFilteredVouchers();
 
   const handleApproveRegistration = (attendeeId: string) => {
-    setAttendees(attendees.map(attendee => 
-      attendee.id === attendeeId 
-        ? { 
-            ...attendee, 
-            status: 'approved',
-            reviewedBy: user?.id || '1',
-            reviewedAt: new Date().toISOString()
-          } 
-        : attendee
-    ));
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'approved' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+        };
+      }
+      return attendee;
+    }));
 
-    // Create voucher when approved
+    // Create voucher for approved attendee if it doesn't exist
     const attendee = attendees.find(a => a.id === attendeeId);
     if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
       const newVoucher = createVoucher(attendeeId, attendee.eventId);
@@ -313,17 +314,19 @@ function App() {
     }
   };
 
-  const handleRejectRegistration = (attendeeId: string) => {
-    setAttendees(attendees.map(attendee => 
-      attendee.id === attendeeId 
-        ? { 
-            ...attendee, 
-            status: 'rejected',
-            reviewedBy: user?.id || '1',
-            reviewedAt: new Date().toISOString()
-          } 
-        : attendee
-    ));
+  const handleRejectRegistration = (attendeeId: string, reason: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'rejected' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+          rejectionReason: reason,
+        };
+      }
+      return attendee;
+    }));
   };
 
   const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => {
