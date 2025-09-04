@@ -109,7 +109,10 @@ function App() {
           department: 'Marketing',
           registeredAt: new Date(Date.now() - 86400000).toISOString(),
           voucherId: 'voucher-1',
+          status: 'approved',
           submittedBy: '2',
+          reviewedBy: '1',
+          reviewedAt: new Date(Date.now() - 86000000).toISOString(),
         },
         {
           id: '2',
@@ -120,10 +123,7 @@ function App() {
           department: 'HR',
           registeredAt: new Date(Date.now() - 172800000).toISOString(),
           voucherId: 'voucher-2',
-          status: 'approved',
           submittedBy: '2',
-          reviewedBy: '1',
-          reviewedAt: new Date(Date.now() - 172400000).toISOString(),
         },
         {
           id: '3',
