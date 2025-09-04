@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon, Filter, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon, Filter, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { Event, Attendee, Voucher } from '../types';
 import { usePagination } from '../hooks/usePagination';
 import { useSearch } from '../hooks/useSearch';
 import Pagination from './Pagination';
-import { lookupInternalUser } from '../services/userService';
+import { lookupUserByPF } from '../services/userService';
 
 interface AttendeeManagementProps {
   events: Event[];
@@ -29,11 +29,12 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [rejectingAttendee, setRejectingAttendee] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [isLookingUpUser, setIsLookingUpUser] = useState(false);
+  const [isRetrievingUser, setIsRetrievingUser] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [lookupSuccess, setLookupSuccess] = useState(false);
   const [formData, setFormData] = useState({
     eventId: '',
+    pfNumber: '',
     name: '',
     email: '',
     phone: '',
@@ -93,6 +94,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
     });
     setFormData({
       eventId: '',
+      pfNumber: '',
       name: '',
       email: '',
       phone: '',
@@ -106,56 +108,64 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
     alert('Registration submitted successfully! Awaiting admin approval.');
   };
 
-  const handleEmailLookup = async (email: string) => {
-    if (!email || !email.includes('@company.com')) {
+  const handlePFLookup = async () => {
+    if (!formData.pfNumber.trim()) {
       setLookupError('');
       setLookupSuccess(false);
       return;
     }
 
-    setIsLookingUpUser(true);
+    setIsRetrievingUser(true);
     setLookupError('');
     setLookupSuccess(false);
 
     try {
-      const result = await lookupInternalUser(email);
+      const result = await lookupUserByPF(formData.pfNumber.trim());
       
       if (result.success && result.data) {
         setFormData(prev => ({
           ...prev,
           name: result.data!.name,
           department: result.data!.department || prev.department,
+          email: result.data!.email,
         }));
         setLookupSuccess(true);
         setLookupError('');
       } else {
         setLookupError(result.error || 'User not found');
         setLookupSuccess(false);
+        // Clear fields on error
+        setFormData(prev => ({
+          ...prev,
+          name: '',
+          email: '',
+          department: '',
+        }));
       }
     } catch (error) {
       setLookupError('Failed to lookup user details');
       setLookupSuccess(false);
     } finally {
-      setIsLookingUpUser(false);
+      setIsRetrievingUser(false);
     }
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const email = e.target.value;
-    setFormData({ ...formData, email });
+  const handlePFNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pfNumber = e.target.value;
+    setFormData({ ...formData, pfNumber });
     
-    // Clear previous lookup state when email changes
-    if (email !== formData.email) {
+    // Clear previous lookup state and other fields when PF number changes
+    if (pfNumber !== formData.pfNumber) {
       setLookupError('');
       setLookupSuccess(false);
+      setFormData(prev => ({
+        ...prev,
+        pfNumber,
+        name: '',
+        email: '',
+        department: '',
+      }));
     }
-    
-    // Trigger lookup after user stops typing (debounced)
-    const timeoutId = setTimeout(() => {
-      handleEmailLookup(email);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
   };
 
   const getEventName = (eventId: string) => {
@@ -277,11 +287,14 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     setShowForm(false);
                     setFormData({
                       eventId: '',
+                      pfNumber: '',
                       name: '',
                       email: '',
                       phone: '',
                       department: '',
                     });
+                    setLookupError('');
+                    setLookupSuccess(false);
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
@@ -330,6 +343,53 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 )}
               </div>
 
+              {/* PF Number Lookup */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PF Number *
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    required
+                    value={formData.pfNumber}
+                    onChange={handlePFNumberChange}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                    placeholder="Enter PF Number (e.g., PF001)"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePFLookup}
+                    disabled={!formData.pfNumber.trim() || isRetrievingUser}
+                    className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isRetrievingUser ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    <span>{isRetrievingUser ? 'Retrieving...' : 'Retrieve'}</span>
+                  </button>
+                </div>
+                
+                {lookupError && (
+                  <p className="text-red-600 text-sm mt-1 flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    {lookupError}
+                  </p>
+                )}
+                {lookupSuccess && (
+                  <p className="text-green-600 text-sm mt-1 flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Employee details retrieved successfully
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter employee PF number and click Retrieve to auto-fill details
+                </p>
+              </div>
+
+              {/* Auto-filled Employee Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -339,51 +399,33 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
-                      lookupSuccess ? 'bg-green-50 border-green-300' : ''
-                    }`}
-                    placeholder="John Doe"
                     readOnly={lookupSuccess}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
+                      lookupSuccess ? 'bg-green-50 border-green-300 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={lookupSuccess ? "Retrieved from PF lookup" : "Will be auto-filled"}
                   />
                   {lookupSuccess && (
-                    <p className="text-xs text-green-600 mt-1">Auto-filled from internal directory</p>
+                    <p className="text-xs text-green-600 mt-1">Auto-filled from employee directory</p>
                   )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleEmailChange}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                      placeholder="john.doe@company.com"
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      {isLookingUpUser && (
-                        <Loader2 className="h-4 w-4 text-coop-600 animate-spin" />
-                      )}
-                      {lookupSuccess && !isLookingUpUser && (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      )}
-                      {lookupError && !isLookingUpUser && (
-                        <AlertCircle className="h-4 w-4 text-red-600" />
-                      )}
-                    </div>
-                  </div>
-                  {lookupError && (
-                    <p className="text-red-600 text-sm mt-1">{lookupError}</p>
-                  )}
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    readOnly={lookupSuccess}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
+                      lookupSuccess ? 'bg-green-50 border-green-300 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={lookupSuccess ? "Retrieved from PF lookup" : "Will be auto-filled"}
+                  />
                   {lookupSuccess && (
-                    <p className="text-green-600 text-sm mt-1">User details retrieved successfully</p>
+                    <p className="text-xs text-green-600 mt-1">Auto-filled from employee directory</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter @company.com email to auto-fill details
-                  </p>
                 </div>
               </div>
 
@@ -407,15 +449,14 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                   <input
                     type="text"
                     value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
-                      lookupSuccess ? 'bg-green-50 border-green-300' : ''
-                    }`}
-                    placeholder="Marketing"
                     readOnly={lookupSuccess}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
+                      lookupSuccess ? 'bg-green-50 border-green-300 cursor-not-allowed' : ''
+                    }`}
+                    placeholder={lookupSuccess ? "Retrieved from PF lookup" : "Will be auto-filled"}
                   />
                   {lookupSuccess && (
-                    <p className="text-xs text-green-600 mt-1">Auto-filled from internal directory</p>
+                    <p className="text-xs text-green-600 mt-1">Auto-filled from employee directory</p>
                   )}
                 </div>
               </div>
@@ -427,6 +468,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     setShowForm(false);
                     setFormData({
                       eventId: '',
+                      pfNumber: '',
                       name: '',
                       email: '',
                       phone: '',
@@ -442,8 +484,8 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 <button
                   type="submit"
                   disabled={userRole === 'external' && events.length === 1 ? 
-                    !isEventRegistrationOpen(events[0].id) : 
-                    !formData.eventId || !isEventRegistrationOpen(formData.eventId)}
+                    !isEventRegistrationOpen(events[0].id) || !lookupSuccess : 
+                    !formData.eventId || !isEventRegistrationOpen(formData.eventId) || !lookupSuccess}
                   className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Register Attendee
