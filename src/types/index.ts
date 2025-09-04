@@ -25,6 +25,11 @@ export interface Attendee {
   department: string;
   registeredAt: string;
   voucherId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedBy: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
 }
 
 export interface Voucher {

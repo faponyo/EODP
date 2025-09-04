@@ -80,8 +80,8 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
       iconColor: 'text-blue-600',
     },
     {
-      name: 'Total Attendees',
-      value: stats.totalAttendees.toLocaleString(),
+      name: 'Approved Attendees',
+      value: stats.approvedAttendees.toLocaleString(),
       icon: Users,
       color: 'purple',
       bgColor: 'bg-purple-50',
@@ -130,6 +130,23 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pending Approvals Alert */}
+      {stats.pendingAttendees > 0 && user?.role === 'admin' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-yellow-800">
+                {stats.pendingAttendees} registration{stats.pendingAttendees === 1 ? '' : 's'} awaiting your approval
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                Review pending registrations in the Attendees section
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

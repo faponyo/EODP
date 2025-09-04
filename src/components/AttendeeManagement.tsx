@@ -17,10 +17,15 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   attendees,
   vouchers,
   onRegisterAttendee,
+  onApproveRegistration,
+  onRejectRegistration,
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [rejectingAttendee, setRejectingAttendee] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [formData, setFormData] = useState({
     eventId: '',
     name: '',
@@ -47,8 +52,12 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
       filtered = filtered.filter(attendee => attendee.department === selectedDepartment);
     }
 
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(attendee => attendee.status === selectedStatus);
+    }
+
     return filtered.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
-  }, [searchedAttendees, selectedEvent, selectedDepartment]);
+  }, [searchedAttendees, selectedEvent, selectedDepartment, selectedStatus]);
 
   // Pagination
   const pagination = usePagination(50);
@@ -78,6 +87,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
       department: '',
     });
     setShowForm(false);
+    
+    // Show success message for pending approval
+    alert('Registration submitted successfully! Awaiting admin approval.');
   };
 
   const getEventName = (eventId: string) => {
@@ -128,7 +140,43 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
-  }, [searchTerm, selectedEvent, selectedDepartment]);
+  }, [searchTerm, selectedEvent, selectedDepartment, selectedStatus]);
+
+  const handleApprove = (attendeeId: string) => {
+    onApproveRegistration(attendeeId);
+  };
+
+  const handleReject = (attendeeId: string) => {
+    setRejectingAttendee(attendeeId);
+  };
+
+  const handleRejectSubmit = () => {
+    if (rejectingAttendee && rejectionReason.trim()) {
+      onRejectRegistration(rejectingAttendee, rejectionReason.trim());
+      setRejectingAttendee(null);
+      setRejectionReason('');
+    }
+  };
+
+  const handleRejectCancel = () => {
+    setRejectingAttendee(null);
+    setRejectionReason('');
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const pendingCount = attendees.filter(a => a.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -136,6 +184,11 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Attendee Management</h1>
           <p className="text-gray-600 mt-1">Register and manage event attendees</p>
+          {pendingCount > 0 && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              {pendingCount} registration{pendingCount === 1 ? '' : 's'} pending approval
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -256,7 +309,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
 
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Attendees</label>
             <div className="relative">
@@ -269,6 +322,19 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 placeholder="Search by name, email, or department..."
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending Approval</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Event</label>
@@ -302,7 +368,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
           </div>
         </div>
         
-        {(searchTerm || selectedEvent || selectedDepartment) && (
+        {(searchTerm || selectedEvent || selectedDepartment || selectedStatus !== 'all') && (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-600">
               Showing {filteredAttendees.length} of {attendees.length} attendees
@@ -312,6 +378,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 setSearchTerm('');
                 setSelectedEvent('');
                 setSelectedDepartment('');
+                setSelectedStatus('all');
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
@@ -323,6 +390,50 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
 
       {/* Attendees List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Rejection Modal */}
+        {rejectingAttendee && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Reject Registration
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection *
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Please provide a reason for rejection..."
+                  rows={3}
+                  maxLength={200}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This reason will be recorded for audit purposes
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleRejectSubmit}
+                  disabled={!rejectionReason.trim()}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Reject Registration
+                </button>
+                <button
+                  onClick={handleRejectCancel}
+                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -348,6 +459,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                           {getEventName(attendee.eventId)}
                         </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(attendee.status)}`}>
+                          {attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1)}
+                        </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -372,11 +486,41 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       <div className="flex items-center mt-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span>Registered: {new Date(attendee.registeredAt).toLocaleDateString()}</span>
+                        {attendee.reviewedAt && (
+                          <span className="ml-4">
+                            • Reviewed: {new Date(attendee.reviewedAt).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
+                      
+                      {attendee.status === 'rejected' && attendee.rejectionReason && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800">
+                            <strong>Rejection Reason:</strong> {attendee.rejectionReason}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 lg:mt-0 lg:ml-6">
-                      {voucher && (
+                      {attendee.status === 'pending' && user?.role === 'admin' && (
+                        <div className="flex space-x-2 mb-4">
+                          <button
+                            onClick={() => handleApprove(attendee.id)}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(attendee.id)}
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                      
+                      {voucher && attendee.status === 'approved' && (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 min-w-[200px]">
                           <div className="flex items-center justify-center mb-2">
                             <TicketIcon className="h-4 w-4 text-green-600 mr-1" />
@@ -400,6 +544,19 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+                      
+                      {attendee.status === 'pending' && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-yellow-800 mb-1">Awaiting Approval</div>
+                          <div className="text-xs text-yellow-700">Voucher will be issued after approval</div>
+                        </div>
+                      )}
+                      
+                      {attendee.status === 'rejected' && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-red-800">Registration Rejected</div>
                         </div>
                       )}
                     </div>

@@ -109,6 +109,10 @@ function App() {
           department: 'Marketing',
           registeredAt: new Date(Date.now() - 86400000).toISOString(),
           voucherId: 'voucher-1',
+          status: 'approved',
+          submittedBy: '2',
+          reviewedBy: '1',
+          reviewedAt: new Date(Date.now() - 86000000).toISOString(),
         },
         {
           id: '2',
@@ -119,6 +123,10 @@ function App() {
           department: 'HR',
           registeredAt: new Date(Date.now() - 172800000).toISOString(),
           voucherId: 'voucher-2',
+          status: 'approved',
+          submittedBy: '2',
+          reviewedBy: '1',
+          reviewedAt: new Date(Date.now() - 172400000).toISOString(),
         },
         {
           id: '3',
@@ -129,6 +137,10 @@ function App() {
           department: 'Engineering',
           registeredAt: new Date(Date.now() - 259200000).toISOString(),
           voucherId: 'voucher-3',
+          status: 'approved',
+          submittedBy: '2',
+          reviewedBy: '1',
+          reviewedAt: new Date(Date.now() - 258800000).toISOString(),
         },
       ];
 
@@ -200,20 +212,57 @@ function App() {
 
   const handleRegisterAttendee = (attendeeData: Omit<Attendee, 'id' | 'registeredAt' | 'voucherId'>) => {
     const attendeeId = Date.now().toString();
-    const voucherId = `voucher-${attendeeId}`;
     
     const newAttendee: Attendee = {
       ...attendeeData,
       id: attendeeId,
       registeredAt: new Date().toISOString(),
-      voucherId,
+      voucherId: '', // Will be assigned when approved
+      status: 'pending',
+      submittedBy: user?.id || '1',
     };
 
-    const newVoucher = createVoucher(attendeeId, attendeeData.eventId);
-    newVoucher.id = voucherId;
-
     setAttendees([...attendees, newAttendee]);
-    setVouchers([...vouchers, newVoucher]);
+  };
+
+  const handleApproveRegistration = (attendeeId: string) => {
+    const voucherId = `voucher-${attendeeId}`;
+    
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'approved' as const,
+          voucherId,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+        };
+      }
+      return attendee;
+    }));
+
+    // Create voucher for approved attendee
+    const attendee = attendees.find(a => a.id === attendeeId);
+    if (attendee) {
+      const newVoucher = createVoucher(attendeeId, attendee.eventId);
+      newVoucher.id = voucherId;
+      setVouchers([...vouchers, newVoucher]);
+    }
+  };
+
+  const handleRejectRegistration = (attendeeId: string, reason: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'rejected' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+          rejectionReason: reason,
+        };
+      }
+      return attendee;
+    }));
   };
 
   const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => {
@@ -276,6 +325,8 @@ function App() {
           attendees={attendees}
           vouchers={vouchers}
           onRegisterAttendee={handleRegisterAttendee}
+          onApproveRegistration={handleApproveRegistration}
+          onRejectRegistration={handleRejectRegistration}
         />
       )}
       {currentPage === 'vouchers' && (
