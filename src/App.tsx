@@ -11,10 +11,12 @@ import VoucherManagement from './components/VoucherManagement';
 import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
 import NoAccessPage from './components/NoAccessPage';
+import EventSelector from './components/EventSelector';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   
   // State management
   const [events, setEvents] = useState<Event[]>([]);
@@ -306,6 +308,7 @@ function App() {
   const filteredEvents = getFilteredEvents();
   const filteredAttendees = getFilteredAttendees();
   const filteredVouchers = getFilteredVouchers();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
 
   // Check if user has any access rights
   const hasAnyAccess = () => {
@@ -321,6 +324,15 @@ function App() {
     
     return false;
   };
+
+  // Check if external user needs to select an event
+  const needsEventSelection = () => {
+    return user?.role === 'external' && 
+           user.assignedEventIds && 
+           user.assignedEventIds.length > 0 && 
+           !selectedEventId;
+  };
+
   const handleApproveRegistration = (attendeeId: string) => {
     setAttendees(attendees.map(attendee => {
       if (attendee.id === attendeeId) {
@@ -401,20 +413,40 @@ function App() {
   // Show no access page if user has no rights
   if (!hasAnyAccess()) {
     return (
-      <Layout currentPage="no-access" onPageChange={() => {}} events={[]}>
+      <Layout currentPage="no-access" onPageChange={() => {}} events={[]} selectedEvent={null}>
         <NoAccessPage />
       </Layout>
     );
   }
+
+  // Show event selection for external users
+  if (needsEventSelection()) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+      />
+    );
+  }
+
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage} events={filteredEvents}>
+    <Layout 
+      currentPage={currentPage} 
+      onPageChange={setCurrentPage} 
+      events={filteredEvents}
+      selectedEvent={selectedEvent}
+    >
       {currentPage === 'dashboard' && (
-        <Dashboard events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
+        <Dashboard 
+          events={user?.role === 'external' && selectedEventId ? [selectedEvent!].filter(Boolean) : filteredEvents} 
+          attendees={user?.role === 'external' && selectedEventId ? filteredAttendees.filter(a => a.eventId === selectedEventId) : filteredAttendees} 
+          vouchers={user?.role === 'external' && selectedEventId ? filteredVouchers.filter(v => v.eventId === selectedEventId) : filteredVouchers} 
+        />
       )}
       {currentPage === 'events' && (
         <EventManagement
-          events={filteredEvents}
-          attendees={filteredAttendees}
+          events={user?.role === 'external' && selectedEventId ? [selectedEvent!].filter(Boolean) : filteredEvents}
+          attendees={user?.role === 'external' && selectedEventId ? filteredAttendees.filter(a => a.eventId === selectedEventId) : filteredAttendees}
           onCreateEvent={handleCreateEvent}
           onUpdateEvent={handleUpdateEvent}
           onDeleteEvent={handleDeleteEvent}
@@ -423,9 +455,9 @@ function App() {
       )}
       {currentPage === 'attendees' && (
         <AttendeeManagement
-          events={filteredEvents}
-          attendees={filteredAttendees}
-          vouchers={filteredVouchers}
+          events={user?.role === 'external' && selectedEventId ? [selectedEvent!].filter(Boolean) : filteredEvents}
+          attendees={user?.role === 'external' && selectedEventId ? filteredAttendees.filter(a => a.eventId === selectedEventId) : filteredAttendees}
+          vouchers={user?.role === 'external' && selectedEventId ? filteredVouchers.filter(v => v.eventId === selectedEventId) : filteredVouchers}
           onRegisterAttendee={handleRegisterAttendee}
           onApproveRegistration={handleApproveRegistration}
           onRejectRegistration={handleRejectRegistration}
@@ -434,22 +466,18 @@ function App() {
       )}
       {currentPage === 'vouchers' && (
         <VoucherManagement
-          events={filteredEvents}
-          attendees={filteredAttendees}
-          vouchers={filteredVouchers}
+          events={user?.role === 'external' && selectedEventId ? [selectedEvent!].filter(Boolean) : filteredEvents}
+          attendees={user?.role === 'external' && selectedEventId ? filteredAttendees.filter(a => a.eventId === selectedEventId) : filteredAttendees}
+          vouchers={user?.role === 'external' && selectedEventId ? filteredVouchers.filter(v => v.eventId === selectedEventId) : filteredVouchers}
           onClaimDrink={handleClaimDrink}
           userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'reports' && (
-        <Reports events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
-      )}
-      {currentPage === 'users' && user?.role === 'admin' && (
-        <UserManagement
-          events={events}
-          onCreateUser={handleCreateUser}
-          onUpdateUserStatus={handleUpdateUserStatus}
-          onUpdateUser={handleUpdateUser}
+        <Reports 
+          events={user?.role === 'external' && selectedEventId ? [selectedEvent!].filter(Boolean) : filteredEvents} 
+          attendees={user?.role === 'external' && selectedEventId ? filteredAttendees.filter(a => a.eventId === selectedEventId) : filteredAttendees} 
+          vouchers={user?.role === 'external' && selectedEventId ? filteredVouchers.filter(v => v.eventId === selectedEventId) : filteredVouchers} 
         />
       )}
       {currentPage === 'users' && user?.role === 'admin' && (
