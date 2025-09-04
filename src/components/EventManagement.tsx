@@ -444,3 +444,265 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                    placeholder="Conference Hall A"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Attendees *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={formData.maxAttendees}
+                    onChange={(e) => setFormData({ ...formData, maxAttendees: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                  placeholder="Event description..."
+                />
+              </div>
+
+              {/* Voucher Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-center space-x-2 mb-4">
+                  <input
+                    type="checkbox"
+                    id="hasVouchers"
+                    checked={formData.hasVouchers}
+                    onChange={(e) => setFormData({ ...formData, hasVouchers: e.target.checked })}
+                    className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
+                  />
+                  <label htmlFor="hasVouchers" className="text-sm font-medium text-gray-700">
+                    This event includes vouchers
+                  </label>
+                </div>
+
+                {formData.hasVouchers && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-gray-700">Voucher Categories</h4>
+                      <button
+                        type="button"
+                        onClick={addVoucherCategory}
+                        className="text-coop-600 hover:text-coop-700 text-sm flex items-center space-x-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Category</span>
+                      </button>
+                    </div>
+
+                    {formData.voucherCategories.map((category) => (
+                      <div key={category.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-sm font-medium text-gray-700">Category {formData.voucherCategories.indexOf(category) + 1}</h5>
+                          <button
+                            type="button"
+                            onClick={() => removeVoucherCategory(category.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Category Name
+                            </label>
+                            <input
+                              type="text"
+                              value={category.name}
+                              onChange={(e) => updateVoucherCategory(category.id, 'name', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                              placeholder="e.g., Food Voucher"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Number of Items
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={category.numberOfItems}
+                              onChange={(e) => updateVoucherCategory(category.id, 'numberOfItems', parseInt(e.target.value))}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Value (R)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={category.value}
+                              onChange={(e) => updateVoucherCategory(category.id, 'value', parseFloat(e.target.value))}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-coop-600 text-white rounded-lg hover:bg-coop-700 transition-colors"
+                >
+                  {editingEvent ? 'Update Event' : 'Create Event'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Events List */}
+      <div className="grid gap-6">
+        {events.length > 0 ? (
+          events.map((event) => {
+            const eventAttendees = getEventAttendees(event.id);
+            const approvedCount = eventAttendees.filter(a => a.status === 'approved').length;
+            const isUpcoming = new Date(event.date) > new Date();
+            
+            return (
+              <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-xl font-semibold text-gray-900">{event.name}</h3>
+                      {isUpcoming && (
+                        <span className="px-2 py-1 bg-coop-100 text-coop-800 text-xs font-medium rounded-full">
+                          Upcoming
+                        </span>
+                      )}
+                      {event.hasVouchers && (
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center space-x-1">
+                          <TicketIcon className="h-3 w-3" />
+                          <span>Vouchers</span>
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(event.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{event.location}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4" />
+                        <span>{approvedCount} / {event.maxAttendees} attendees</span>
+                      </div>
+                    </div>
+                    
+                    {event.description && (
+                      <p className="text-gray-600 mb-4">{event.description}</p>
+                    )}
+
+                    {/* Event Timer for upcoming events */}
+                    {isUpcoming && (
+                      <div className="mb-4">
+                        <EventTimer eventDate={event.date} />
+                      </div>
+                    )}
+
+                    {/* Voucher Categories Display */}
+                    {event.hasVouchers && event.voucherCategories && event.voucherCategories.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Voucher Categories:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {event.voucherCategories.map((category) => (
+                            <div key={category.id} className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-1 text-sm">
+                              <span className="font-medium text-purple-800">{category.name}</span>
+                              <span className="text-purple-600 ml-2">
+                                {category.numberOfItems} × R{category.value.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => handleViewAttendees(event)}
+                      className="p-2 text-gray-600 hover:text-coop-600 hover:bg-coop-50 rounded-lg transition-colors"
+                      title="View Attendees"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    {user?.role === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(event)}
+                          className="p-2 text-gray-600 hover:text-coop-600 hover:bg-coop-50 rounded-lg transition-colors"
+                          title="Edit Event"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteEvent(event.id)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Event"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
+            <p className="text-gray-600 mb-6">Create your first event to get started</p>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors inline-flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create Event</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default EventManagement;
