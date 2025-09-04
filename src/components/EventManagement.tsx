@@ -123,6 +123,21 @@ const EventManagement: React.FC<EventManagementProps> = ({
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-900">Attendees ({eventAttendees.length}/{selectedEvent.maxAttendees})</h3>
+                {(() => {
+                  const eventDate = new Date(selectedEvent.date);
+                  const today = new Date();
+                  eventDate.setHours(0, 0, 0, 0);
+                  today.setHours(0, 0, 0, 0);
+                  const isToday = eventDate.getTime() === today.getTime();
+                  
+                  return isToday && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Registration Open
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
               {eventAttendees.length > 0 ? (
                 <div className="space-y-3">
