@@ -80,32 +80,32 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
       value: stats.totalEvents.toLocaleString(),
       icon: Calendar,
       color: 'blue',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      bgColor: 'bg-coop-50',
+      iconColor: 'text-coop-600',
     },
     {
       name: 'Approved Attendees',
       value: stats.approvedAttendees.toLocaleString(),
       icon: Users,
       color: 'purple',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600',
+      bgColor: 'bg-coop-blue-50',
+      iconColor: 'text-coop-blue-600',
     },
     {
       name: 'Active Vouchers',
       value: stats.totalVouchers.toLocaleString(),
       icon: TicketIcon,
       color: 'green',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600',
+      bgColor: 'bg-coop-100',
+      iconColor: 'text-coop-700',
     },
     {
       name: 'Drinks Claimed',
       value: stats.totalDrinksClaimed.toLocaleString(),
       icon: TrendingUp,
       color: 'orange',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600',
+      bgColor: 'bg-coop-orange-50',
+      iconColor: 'text-coop-orange-600',
     },
   ];
 
@@ -163,7 +163,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Clock className="h-5 w-5 text-blue-600 mr-2" />
+                <Clock className="h-5 w-5 text-coop-600 mr-2" />
                 <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
               </div>
               {upcomingEvents.length > 5 && (
@@ -183,7 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">{event.name}</h3>
                         <p className="text-sm text-gray-600 truncate">{event.location}</p>
-                        <p className="text-sm text-blue-600">{new Date(event.date).toLocaleDateString()}</p>
+                        <p className="text-sm text-coop-600">{new Date(event.date).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm font-medium text-gray-900">
@@ -192,10 +192,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
                         <p className="text-xs text-gray-400">Attendees</p>
                         <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
                           <div 
-                            className={`h-1.5 rounded-full transition-all duration-300 ${
-                              capacityPercentage > 90 ? 'bg-red-500' : 
-                              capacityPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
+                            className="bg-coop-500 h-1.5 rounded-full transition-all duration-300"
                             style={{ width: `${Math.min(capacityPercentage, 100)}%` }}
                           ></div>
                         </div>
@@ -215,7 +212,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                <CheckCircle className="h-5 w-5 text-coop-600 mr-2" />
                 <h2 className="text-lg font-semibold text-gray-900">Recent Registrations</h2>
               </div>
               {recentAttendees.length >= 10 && (
@@ -233,7 +230,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">{attendee.name}</h3>
                         <p className="text-sm text-gray-600 truncate">{attendee.email}</p>
-                        <p className="text-sm text-blue-600 truncate">{event?.name}</p>
+                        <p className="text-sm text-coop-600 truncate">{event?.name}</p>
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm text-gray-500">
@@ -260,15 +257,15 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{stats.totalVouchers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-coop-600">{stats.totalVouchers.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Total Vouchers</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{stats.claimedVouchers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-coop-700">{stats.claimedVouchers.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Fully Claimed</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">
+              <div className="text-3xl font-bold text-coop-orange-600">
                 {(stats.totalVouchers - stats.claimedVouchers).toLocaleString()}
               </div>
               <div className="text-sm text-gray-600">Partially Used</div>
@@ -278,7 +275,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
             <div className="mt-6">
               <div className="bg-gray-200 rounded-full h-3">
                 <div 
-                  className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                  className="bg-coop-500 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${(stats.claimedVouchers / stats.totalVouchers) * 100}%` }}
                 ></div>
               </div>

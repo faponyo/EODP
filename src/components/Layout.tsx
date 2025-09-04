@@ -27,14 +27,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600 mr-3" />
+              <Calendar className="h-8 w-8 text-coop-600 mr-3" />
               <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <User className="h-4 w-4" />
                 <span>{user?.name}</span>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                <span className="px-2 py-1 bg-coop-100 text-coop-800 rounded-full text-xs">
                   {user?.role}
                 </span>
               </div>
@@ -64,7 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
                         onClick={() => onPageChange(item.id)}
                         className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                           currentPage === item.id
-                            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                            ? 'bg-coop-50 text-coop-700 border-l-4 border-coop-600'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >

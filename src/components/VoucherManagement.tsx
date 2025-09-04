@@ -141,8 +141,8 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <TicketIcon className="h-6 w-6 text-blue-600" />
+            <div className="bg-coop-50 p-3 rounded-lg">
+              <TicketIcon className="h-6 w-6 text-coop-600" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -153,8 +153,8 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
         
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-green-50 p-3 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="bg-coop-100 p-3 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-coop-700" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{stats.fullyClaimed}</p>
@@ -165,8 +165,8 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-orange-50 p-3 rounded-lg">
-              <Clock className="h-6 w-6 text-orange-600" />
+            <div className="bg-coop-orange-50 p-3 rounded-lg">
+              <Clock className="h-6 w-6 text-coop-orange-600" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{stats.partiallyUsed}</p>
@@ -177,8 +177,8 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <Zap className="h-6 w-6 text-purple-600" />
+            <div className="bg-coop-blue-50 p-3 rounded-lg">
+              <Zap className="h-6 w-6 text-coop-blue-600" />
             </div>
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{stats.totalDrinksRemaining}</p>
@@ -216,7 +216,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
             <div className="flex space-x-3">
               <button
                 onClick={handleClaimSubmit}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex-1 bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors"
               >
                 Claim Drink
               </button>
@@ -242,7 +242,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 placeholder="Search vouchers, names, emails..."
               />
             </div>
@@ -252,7 +252,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="all">All Vouchers</option>
               <option value="active">Unused</option>
@@ -265,7 +265,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
             <select
               value={selectedEvent}
               onChange={(e) => setSelectedEvent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="">All Events</option>
               {events.map((event) => (
@@ -288,7 +288,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                 setSelectedStatus('all');
                 setSelectedEvent('');
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-coop-600 hover:text-coop-700 font-medium"
             >
               Clear filters
             </button>
@@ -321,11 +321,11 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                   <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-3 mb-3">
-                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-mono font-medium">
+                        <div className="bg-coop-100 text-coop-800 px-3 py-1 rounded-full text-sm font-mono font-medium">
                           {voucher.voucherNumber}
                         </div>
                         {voucher.isFullyClaimed && (
-                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                          <div className="bg-coop-100 text-coop-800 px-3 py-1 rounded-full text-sm font-medium">
                             Fully Used
                           </div>
                         )}
@@ -350,10 +350,10 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
 
                     <div className="flex-shrink-0">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-[300px]">
-                        <div className="bg-blue-50 rounded-lg p-4">
+                        <div className="bg-coop-50 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-blue-900 text-sm">Soft Drinks</h4>
-                            <span className="text-sm font-bold text-blue-700">
+                            <h4 className="font-medium text-coop-900 text-sm">Soft Drinks</h4>
+                            <span className="text-sm font-bold text-coop-700">
                               {voucher.softDrinks.claimed}/{voucher.softDrinks.total}
                             </span>
                           </div>
@@ -361,13 +361,13 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                             <button
                               onClick={() => handleClaimClick(voucher.id, 'soft')}
                               disabled={!canClaimMore(voucher, 'soft')}
-                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
+                              className="bg-coop-600 text-white px-3 py-1 rounded text-sm hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
                             >
                               Claim
                             </button>
-                            <div className="bg-blue-200 rounded-full h-2 flex-1">
+                            <div className="bg-coop-200 rounded-full h-2 flex-1">
                               <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                className="bg-coop-600 h-2 rounded-full transition-all duration-300"
                                 style={{ 
                                   width: `${(voucher.softDrinks.claimed / voucher.softDrinks.total) * 100}%` 
                                 }}
@@ -376,10 +376,10 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                           </div>
                         </div>
 
-                        <div className="bg-orange-50 rounded-lg p-4">
+                        <div className="bg-coop-orange-50 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-orange-900 text-sm">Hard Drinks</h4>
-                            <span className="text-sm font-bold text-orange-700">
+                            <h4 className="font-medium text-coop-orange-900 text-sm">Hard Drinks</h4>
+                            <span className="text-sm font-bold text-coop-orange-700">
                               {voucher.hardDrinks.claimed}/{voucher.hardDrinks.total}
                             </span>
                           </div>
@@ -387,13 +387,13 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                             <button
                               onClick={() => handleClaimClick(voucher.id, 'hard')}
                               disabled={!canClaimMore(voucher, 'hard')}
-                              className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
+                              className="bg-coop-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-coop-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
                             >
                               Claim
                             </button>
-                            <div className="bg-orange-200 rounded-full h-2 flex-1">
+                            <div className="bg-coop-orange-200 rounded-full h-2 flex-1">
                               <div 
-                                className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                                className="bg-coop-orange-600 h-2 rounded-full transition-all duration-300"
                                 style={{ 
                                   width: `${(voucher.hardDrinks.claimed / voucher.hardDrinks.total) * 100}%` 
                                 }}

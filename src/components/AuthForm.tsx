@@ -45,11 +45,11 @@ const AuthForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-coop-600 via-coop-blue-600 to-coop-700 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <Calendar className="h-8 w-8 text-blue-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-coop-100 rounded-full mb-4">
+            <Calendar className="h-8 w-8 text-coop-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Party Manager</h2>
           <p className="text-gray-600">
@@ -72,7 +72,7 @@ const AuthForm: React.FC = () => {
                   required={!isLogin}
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 transition-colors"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -126,7 +126,7 @@ const AuthForm: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-coop-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-coop-700 focus:ring-2 focus:ring-coop-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
@@ -139,7 +139,7 @@ const AuthForm: React.FC = () => {
               setError('');
               setFormData({ email: '', password: '', name: '' });
             }}
-            className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="text-coop-600 hover:text-coop-700 font-medium transition-colors"
           >
             {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
           </button>

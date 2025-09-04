@@ -213,7 +213,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
         {user?.role === 'admin' && (
           <button
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
             <span>New Event</span>
@@ -238,7 +238,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                   placeholder="End of Year Party 2024"
                 />
               </div>
@@ -251,7 +251,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   required
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 />
               </div>
             </div>
@@ -266,7 +266,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                   placeholder="Grand Ballroom, Hotel Plaza"
                 />
               </div>
@@ -280,7 +280,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   min="1"
                   value={formData.maxAttendees}
                   onChange={(e) => setFormData({ ...formData, maxAttendees: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 />
               </div>
             </div>
@@ -293,7 +293,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 placeholder="Join us for an evening of celebration..."
               />
             </div>
@@ -301,7 +301,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors"
               >
                 {editingEvent ? 'Update Event' : 'Create Event'}
               </button>
@@ -330,7 +330,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900 truncate">{event.name}</h3>
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      isUpcoming ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      isUpcoming ? 'bg-coop-100 text-coop-800' : 'bg-gray-100 text-gray-800'
                     }`}
                   >
                     {isUpcoming ? 'Upcoming' : 'Past'}
@@ -360,7 +360,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                 <div className="mb-4">
                   <div className="bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      className="bg-coop-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100}%` }}
                     ></div>
                   </div>
@@ -380,7 +380,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <>
                       <button
                         onClick={() => handleEdit(event)}
-                        className="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors"
+                        className="bg-coop-100 text-coop-700 p-2 rounded-lg hover:bg-coop-200 transition-colors"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
