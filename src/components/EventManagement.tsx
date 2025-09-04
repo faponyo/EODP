@@ -33,6 +33,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
     location: '',
     description: '',
     maxAttendees: 100,
+    status: 'active' as 'active' | 'closed' | 'cancelled',
     hasVouchers: false,
     voucherCategories: [] as Array<{
       id: string;
@@ -58,6 +59,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: '',
       description: '',
       maxAttendees: 100,
+      status: 'active',
       hasVouchers: false,
       voucherCategories: [],
     });
@@ -90,6 +92,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: event.location,
       description: event.description,
       maxAttendees: event.maxAttendees,
+      status: event.status || 'active',
       hasVouchers: event.hasVouchers || false,
       voucherCategories: event.voucherCategories || [],
     });
@@ -105,6 +108,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
       location: '',
       description: '',
       maxAttendees: 100,
+      status: 'active',
       hasVouchers: false,
       voucherCategories: [],
     });
@@ -474,6 +478,25 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   placeholder="Event description..."
                 />
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Event Status *
+                </label>
+                <select
+                  required
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'closed' | 'cancelled' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="closed">Closed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Active: Open for registration • Closed: Registration closed • Cancelled: Event cancelled
+                </p>
+              </div>
 
               {/* Voucher Section */}
               <div className="border-t pt-4">
@@ -531,242 +554,4 @@ const EventManagement: React.FC<EventManagementProps> = ({
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Number of Items
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={category.numberOfItems}
-                              onChange={(e) => updateVoucherCategory(category.id, 'numberOfItems', parseInt(e.target.value))}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Value (R)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={category.value}
-                              onChange={(e) => updateVoucherCategory(category.id, 'value', parseFloat(e.target.value))}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-coop-600 text-white rounded-lg hover:bg-coop-700 transition-colors"
-                >
-                  {editingEvent ? 'Update Event' : 'Create Event'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Events List */}
-      <div className="grid gap-6">
-        {events.length > 0 ? (
-          events.map((event) => {
-            const eventAttendees = getEventAttendees(event.id);
-            const approvedCount = eventAttendees.filter(a => a.status === 'approved').length;
-            const isUpcoming = new Date(event.date) > new Date();
-            
-            return (
-              <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{event.name}</h3>
-                      {(() => {
-                        const eventDate = new Date(event.date);
-                        const today = new Date();
-                        const isToday = eventDate.toDateString() === today.toDateString();
-                        const isPast = eventDate < today && !isToday;
-                        const isUpcoming = eventDate > today;
-                        
-                        if (isToday) {
-                          return (
-                            <span className="px-2 py-1 bg-coop-600 text-white text-xs font-medium rounded-full animate-pulse">
-                              Today
-                            </span>
-                          );
-                        } else if (isUpcoming) {
-                          return (
-                            <span className="px-2 py-1 bg-coop-100 text-coop-800 text-xs font-medium rounded-full">
-                              Upcoming
-                            </span>
-                          );
-                        } else if (isPast) {
-                          return (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                              Past
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                      {event.hasVouchers && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center space-x-1">
-                          <TicketIcon className="h-3 w-3" />
-                          <span>Vouchers</span>
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4" />
-                        <span>{approvedCount} / {event.maxAttendees} attendees</span>
-                      </div>
-                    </div>
-                   
-                   {/* Attendee Status Breakdown */}
-                   {eventAttendees.length > 0 && (
-                     <div className="mb-4">
-                       <div className="flex items-center space-x-4 text-sm">
-                         <div className="flex items-center space-x-1">
-                           <div className="w-2 h-2 bg-coop-600 rounded-full"></div>
-                           <span className="text-gray-600">Approved: {approvedCount}</span>
-                         </div>
-                         {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                           <div className="flex items-center space-x-1">
-                             <div className="w-2 h-2 bg-coop-yellow-500 rounded-full"></div>
-                             <span className="text-gray-600">Pending: {eventAttendees.filter(a => a.status === 'pending').length}</span>
-                           </div>
-                         )}
-                         {eventAttendees.filter(a => a.status === 'rejected').length > 0 && (
-                           <div className="flex items-center space-x-1">
-                             <div className="w-2 h-2 bg-coop-red-500 rounded-full"></div>
-                             <span className="text-gray-600">Rejected: {eventAttendees.filter(a => a.status === 'rejected').length}</span>
-                           </div>
-                         )}
-                       </div>
-                     </div>
-                   )}
-                    
-                    {event.description && (
-                      <p className="text-gray-600 mb-4">{event.description}</p>
-                    )}
-
-                    {/* Event Timer for upcoming events */}
-                    {(() => {
-                      const eventDate = new Date(event.date);
-                      const today = new Date();
-                      const isToday = eventDate.toDateString() === today.toDateString();
-                      const isUpcoming = eventDate > today;
-                      
-                      return (isUpcoming || isToday);
-                    })() && (
-                      <div className="mb-4">
-                        <EventTimer eventDate={event.date} eventName={event.name} />
-                      </div>
-                    )}
-
-                    {/* Voucher Categories Display */}
-                    {event.hasVouchers && event.voucherCategories && event.voucherCategories.length > 0 && (
-                      <div className="mb-4">
-                       <div className="flex items-center space-x-2 mb-3">
-                         <TicketIcon className="h-4 w-4 text-purple-600" />
-                         <h4 className="text-sm font-medium text-gray-700">Voucher Categories</h4>
-                       </div>
-                        <div className="flex flex-wrap gap-2">
-                          {event.voucherCategories.map((category) => (
-                           <div key={category.id} className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-sm">
-                              <span className="font-medium text-purple-800">{category.name}</span>
-                             <div className="text-purple-600 text-xs mt-1">
-                               <span>{category.numberOfItems} item{category.numberOfItems !== 1 ? 's' : ''}</span>
-                               <span className="mx-1">•</span>
-                               <span>R{category.value.toFixed(2)} each</span>
-                               <span className="mx-1">•</span>
-                               <span className="font-medium">Total: R{(category.numberOfItems * category.value).toFixed(2)}</span>
-                             </div>
-                            </div>
-                          ))}
-                        </div>
-                       <div className="mt-2 text-xs text-gray-500">
-                         Total voucher value per attendee: R{event.voucherCategories.reduce((sum, cat) => sum + (cat.numberOfItems * cat.value), 0).toFixed(2)}
-                       </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 ml-4">
-                    <button
-                      onClick={() => handleViewAttendees(event)}
-                      className="p-2 text-gray-600 hover:text-coop-600 hover:bg-coop-50 rounded-lg transition-colors"
-                      title="View Attendees"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    {user?.role === 'admin' && (
-                      <>
-                        <button
-                          onClick={() => handleEdit(event)}
-                          className="p-2 text-gray-600 hover:text-coop-600 hover:bg-coop-50 rounded-lg transition-colors"
-                          title="Edit Event"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteEvent(event.id)}
-                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete Event"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-            <p className="text-gray-600 mb-6">Create your first event to get started</p>
-            {user?.role === 'admin' && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors inline-flex items-center space-x-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create Event</span>
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default EventManagement;
+                            <label className="block text-xs font-medium text-gray-600 mb-1
