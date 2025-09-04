@@ -25,6 +25,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [rejectingAttendee, setRejectingAttendee] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [formData, setFormData] = useState({
     eventId: '',
     name: '',
@@ -51,8 +54,12 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
       filtered = filtered.filter(attendee => attendee.department === selectedDepartment);
     }
 
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(attendee => attendee.status === selectedStatus);
+    }
+
     return filtered.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
-  }, [searchedAttendees, selectedEvent, selectedDepartment]);
+  }, [searchedAttendees, selectedEvent, selectedDepartment, selectedStatus]);
 
   // Pagination
   const pagination = usePagination(50);
@@ -132,7 +139,43 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
-  }, [searchTerm, selectedEvent, selectedDepartment]);
+  }, [searchTerm, selectedEvent, selectedDepartment, selectedStatus]);
+
+  const handleApprove = (attendeeId: string) => {
+    onApproveRegistration(attendeeId);
+  };
+
+  const handleReject = (attendeeId: string) => {
+    setRejectingAttendee(attendeeId);
+  };
+
+  const handleRejectSubmit = () => {
+    if (rejectingAttendee && rejectionReason.trim()) {
+      onRejectRegistration(rejectingAttendee, rejectionReason.trim());
+      setRejectingAttendee(null);
+      setRejectionReason('');
+    }
+  };
+
+  const handleRejectCancel = () => {
+    setRejectingAttendee(null);
+    setRejectionReason('');
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const pendingCount = attendees.filter(a => a.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -140,6 +183,11 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Attendee Management</h1>
           <p className="text-gray-600 mt-1">Register and manage event attendees</p>
+          {pendingCount > 0 && (
+            <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              {pendingCount} registration{pendingCount === 1 ? '' : 's'} pending approval
+            </div>
+          )}
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -260,7 +308,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
 
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Attendees</label>
             <div className="relative">
@@ -273,6 +321,19 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 placeholder="Search by name, email, or department..."
               />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending Approval</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Event</label>
@@ -306,7 +367,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
           </div>
         </div>
         
-        {(searchTerm || selectedEvent || selectedDepartment) && (
+        {(searchTerm || selectedEvent || selectedDepartment || selectedStatus !== 'all') && (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-gray-600">
               Showing {filteredAttendees.length} of {attendees.length} attendees
@@ -316,6 +377,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 setSearchTerm('');
                 setSelectedEvent('');
                 setSelectedDepartment('');
+                setSelectedStatus('all');
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
@@ -440,7 +502,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     </div>
 
                     <div className="mt-4 lg:mt-0 lg:ml-6">
-                      {attendee.status === 'pending' && user?.role === 'admin' && (
+                      {attendee.status === 'pending' && userRole === 'admin' && (
                         <div className="flex space-x-2 mb-4">
                           <button
                             onClick={() => handleApprove(attendee.id)}
