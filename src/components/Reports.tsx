@@ -131,6 +131,10 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
     const data = filteredVouchers.map(voucher => {
       const attendee = attendees.find(a => a.id === voucher.attendeeId);
       const event = events.find(e => e.id === voucher.eventId);
+      const claimHistory = voucher.claimHistory || [];
+      const softDrinkItems = claimHistory.filter(c => c.drinkType === 'soft').map(c => c.itemName || 'Soft Drink').join(', ');
+      const hardDrinkItems = claimHistory.filter(c => c.drinkType === 'hard').map(c => c.itemName || 'Hard Drink').join(', ');
+      
       return {
         VoucherNumber: voucher.voucherNumber,
         AttendeeName: attendee?.name || '',
@@ -138,8 +142,10 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
         Event: event?.name || '',
         SoftDrinksTotal: voucher.softDrinks.total,
         SoftDrinksClaimed: voucher.softDrinks.claimed,
+        SoftDrinkItems: softDrinkItems,
         HardDrinksTotal: voucher.hardDrinks.total,
         HardDrinksClaimed: voucher.hardDrinks.claimed,
+        HardDrinkItems: hardDrinkItems,
         IsFullyClaimed: voucher.isFullyClaimed,
         CreatedAt: new Date(voucher.createdAt).toLocaleString(),
       };

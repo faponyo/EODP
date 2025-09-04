@@ -42,12 +42,14 @@ export interface Voucher {
   };
   isFullyClaimed: boolean;
   createdAt: string;
+  claimHistory?: VoucherClaim[];
 }
 
 export interface VoucherClaim {
   id: string;
   voucherId: string;
   drinkType: 'soft' | 'hard';
+  itemName?: string;
   claimedAt: string;
   claimedBy: string;
 }

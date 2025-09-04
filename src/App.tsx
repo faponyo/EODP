@@ -216,7 +216,7 @@ function App() {
     setVouchers([...vouchers, newVoucher]);
   };
 
-  const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard') => {
+  const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => {
     setVouchers(vouchers.map(voucher => {
       if (voucher.id !== voucherId) return voucher;
 
@@ -227,6 +227,21 @@ function App() {
       } else if (drinkType === 'hard' && voucher.hardDrinks.claimed < voucher.hardDrinks.total) {
         updatedVoucher.hardDrinks.claimed += 1;
       }
+
+      // Add claim to history
+      const newClaim = {
+        id: Date.now().toString(),
+        voucherId,
+        drinkType,
+        itemName,
+        claimedAt: new Date().toISOString(),
+        claimedBy: user?.id || '1',
+      };
+
+      if (!updatedVoucher.claimHistory) {
+        updatedVoucher.claimHistory = [];
+      }
+      updatedVoucher.claimHistory.push(newClaim);
 
       // Check if fully claimed
       updatedVoucher.isFullyClaimed = 

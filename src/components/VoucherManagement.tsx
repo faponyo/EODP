@@ -9,7 +9,7 @@ interface VoucherManagementProps {
   events: Event[];
   attendees: Attendee[];
   vouchers: Voucher[];
-  onClaimDrink: (voucherId: string, drinkType: 'soft' | 'hard') => void;
+  onClaimDrink: (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => void;
 }
 
 const VoucherManagement: React.FC<VoucherManagementProps> = ({
@@ -20,6 +20,8 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
 }) => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState('');
+  const [claimingVoucher, setClaimingVoucher] = useState<{ voucherId: string; drinkType: 'soft' | 'hard' } | null>(null);
+  const [itemName, setItemName] = useState('');
 
   // Create searchable voucher data with attendee info
   const vouchersWithAttendeeInfo = useMemo(() => {
@@ -103,6 +105,24 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
     return voucher.hardDrinks.claimed < voucher.hardDrinks.total;
   };
 
+  const handleClaimClick = (voucherId: string, drinkType: 'soft' | 'hard') => {
+    setClaimingVoucher({ voucherId, drinkType });
+    setItemName('');
+  };
+
+  const handleClaimSubmit = () => {
+    if (claimingVoucher) {
+      onClaimDrink(claimingVoucher.voucherId, claimingVoucher.drinkType, itemName.trim() || undefined);
+      setClaimingVoucher(null);
+      setItemName('');
+    }
+  };
+
+  const handleClaimCancel = () => {
+    setClaimingVoucher(null);
+    setItemName('');
+  };
+
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
@@ -165,6 +185,49 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Claim Item Modal */}
+      {claimingVoucher && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Claim {claimingVoucher.drinkType === 'soft' ? 'Soft' : 'Hard'} Drink
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Item Name (Optional)
+              </label>
+              <input
+                type="text"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={claimingVoucher.drinkType === 'soft' ? 'e.g., Coca Cola, Orange Juice' : 'e.g., Beer, Wine, Whiskey'}
+                maxLength={50}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Specify the exact item for better inventory tracking
+              </p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleClaimSubmit}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Claim Drink
+              </button>
+              <button
+                onClick={handleClaimCancel}
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -294,7 +357,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                           </div>
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => onClaimDrink(voucher.id, 'soft')}
+                              onClick={() => handleClaimClick(voucher.id, 'soft')}
                               disabled={!canClaimMore(voucher, 'soft')}
                               className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
                             >
@@ -320,7 +383,7 @@ const VoucherManagement: React.FC<VoucherManagementProps> = ({
                           </div>
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => onClaimDrink(voucher.id, 'hard')}
+                              onClick={() => handleClaimClick(voucher.id, 'hard')}
                               disabled={!canClaimMore(voucher, 'hard')}
                               className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex-shrink-0"
                             >
