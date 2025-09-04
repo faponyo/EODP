@@ -361,7 +361,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   <div className="bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: \`${(eventAttendees.filter(a => a.stat\us === 'approved').length / event.maxAttendees) * 100}%` }}
+                      style={{ width: `${(eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100}%` }}
                     ></div>
                   </div>
                 </div>
