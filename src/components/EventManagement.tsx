@@ -27,6 +27,8 @@ const EventManagement: React.FC<EventManagementProps> = ({
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [currentView, setCurrentView] = useState<'list' | 'attendees'>('list');
   const [selectedEventForView, setSelectedEventForView] = useState<Event | null>(null);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [selectedEventForVouchers, setSelectedEventForVouchers] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     date: '',
@@ -159,6 +161,16 @@ const EventManagement: React.FC<EventManagementProps> = ({
     setSelectedEventForView(null);
     setSearchTerm('');
     pagination.resetPage();
+  };
+
+  const handleViewVouchers = (event: Event) => {
+    setSelectedEventForVouchers(event);
+    setShowVoucherModal(true);
+  };
+
+  const handleCloseVoucherModal = () => {
+    setShowVoucherModal(false);
+    setSelectedEventForVouchers(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -388,6 +400,113 @@ const EventManagement: React.FC<EventManagementProps> = ({
           </button>
         )}
       </div>
+
+      {/* Voucher Category Details Modal */}
+      {showVoucherModal && selectedEventForVouchers && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Voucher Categories</h2>
+                  <p className="text-sm text-gray-600 mt-1">{selectedEventForVouchers.name}</p>
+                </div>
+                <button
+                  onClick={handleCloseVoucherModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {selectedEventForVouchers.voucherCategories && selectedEventForVouchers.voucherCategories.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedEventForVouchers.voucherCategories.map((category, index) => (
+                    <div key={category.id} className="bg-coop-50 border border-coop-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-medium text-coop-900">
+                          {category.name || `Category ${index + 1}`}
+                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <TicketIcon className="h-5 w-5 text-coop-600" />
+                          <span className="text-sm font-medium text-coop-700">
+                            Total: R{(category.numberOfItems * category.value).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white rounded-lg p-3 border border-coop-200">
+                          <div className="text-sm font-medium text-gray-700 mb-1">Category Name</div>
+                          <div className="text-lg font-semibold text-gray-900">
+                            {category.name || 'Unnamed Category'}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-3 border border-coop-200">
+                          <div className="text-sm font-medium text-gray-700 mb-1">Number of Items</div>
+                          <div className="text-lg font-semibold text-coop-600">
+                            {category.numberOfItems}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white rounded-lg p-3 border border-coop-200">
+                          <div className="text-sm font-medium text-gray-700 mb-1">Value per Item</div>
+                          <div className="text-lg font-semibold text-coop-600">
+                            R{category.value.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Summary Section */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-3">Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-coop-600">
+                          {selectedEventForVouchers.voucherCategories.length}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Categories</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-coop-600">
+                          {selectedEventForVouchers.voucherCategories.reduce((sum, cat) => sum + cat.numberOfItems, 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Items per Attendee</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-coop-600">
+                          R{selectedEventForVouchers.voucherCategories.reduce((sum, cat) => sum + (cat.numberOfItems * cat.value), 0).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-600">Total Value per Attendee</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <TicketIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Voucher Categories</h3>
+                  <p className="text-gray-600">This event doesn't have any voucher categories configured.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200">
+              <button
+                onClick={handleCloseVoucherModal}
+                className="w-full bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Event Form */}
       {/* Event Form Modal */}
@@ -664,6 +783,13 @@ const EventManagement: React.FC<EventManagementProps> = ({
                           {event.voucherCategories.map((category) => (
                             <span key={category.id} className="px-2 py-1 bg-coop-50 text-coop-700 rounded text-xs">
                               {category.name} ({category.numberOfItems}x R{category.value})
+                          <button
+                            onClick={() => handleViewVouchers(event)}
+                            className="text-xs text-coop-600 hover:text-coop-700 font-medium flex items-center space-x-1"
+                          >
+                            <Eye className="h-3 w-3" />
+                            <span>View Details</span>
+                          </button>
                             </span>
                           ))}
                         </div>
