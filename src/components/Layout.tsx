@@ -1,6 +1,7 @@
 import React from 'react';
-import { User, LogOut, Calendar, Users, TicketIcon, BarChart3 } from 'lucide-react';
+import { User, LogOut, Calendar, Users, TicketIcon, BarChart3, UserCog } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { Event } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,13 +13,18 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, events = [] }) => {
   const { user, logout } = useAuth();
 
-  const navigationItems = [
+  const baseNavigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'attendees', label: 'Attendees', icon: Users },
     { id: 'vouchers', label: 'Vouchers', icon: TicketIcon },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
   ];
+
+  // Add user management for admin users
+  const navigationItems = user?.role === 'admin' 
+    ? [...baseNavigationItems, { id: 'users', label: 'User Management', icon: UserCog }]
+    : baseNavigationItems;
 
   return (
     <div className="min-h-screen bg-gray-50">

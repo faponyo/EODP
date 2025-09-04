@@ -9,6 +9,7 @@ import EventManagement from './components/EventManagement';
 import AttendeeManagement from './components/AttendeeManagement';
 import VoucherManagement from './components/VoucherManagement';
 import Reports from './components/Reports';
+import UserManagement from './components/UserManagement';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
@@ -419,6 +420,14 @@ function App() {
       )}
       {currentPage === 'reports' && (
         <Reports events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
+      )}
+      {currentPage === 'users' && user?.role === 'admin' && (
+        <UserManagement
+          events={events}
+          onCreateUser={handleCreateUser}
+          onUpdateUserStatus={handleUpdateUserStatus}
+          onUpdateUser={handleUpdateUser}
+        />
       )}
       {currentPage === 'users' && user?.role === 'admin' && (
         <UserManagement
