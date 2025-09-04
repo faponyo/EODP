@@ -89,6 +89,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
       department: '',
     });
     setShowForm(false);
+    
+    // Show success message for pending approval
+    alert('Registration submitted successfully! Awaiting admin approval.');
   };
 
   const getEventName = (eventId: string) => {
