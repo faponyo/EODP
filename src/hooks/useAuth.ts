@@ -33,7 +33,7 @@ export const useAuth = () => {
     
     const validDemo = demoCredentials.find(cred => cred.email === email && cred.password === password);
     
-    if (user && user.status === 'active') {
+    if (user && user.status === 'active' && password) {
       localStorage.setItem('currentUser', JSON.stringify(user));
       setAuthState({
         user,
