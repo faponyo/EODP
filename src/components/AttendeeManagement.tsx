@@ -81,6 +81,43 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
     return vouchers.find(v => v.attendeeId === attendeeId);
   };
 
+  const isEventRegistrationOpen = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return false;
+    
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    
+    // Set both dates to start of day for accurate comparison
+    eventDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    return eventDate.getTime() === today.getTime();
+  };
+
+  const getRegistrationStatus = (eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return { canRegister: false, message: 'Event not found' };
+    
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    
+    eventDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    if (eventDate.getTime() === today.getTime()) {
+      return { canRegister: true, message: 'Registration is open today!' };
+    } else if (eventDate.getTime() > today.getTime()) {
+      const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return { 
+        canRegister: false, 
+        message: `Registration opens on ${eventDate.toLocaleDateString()} (${daysUntil} day${daysUntil === 1 ? '' : 's'} from now)` 
+      };
+    } else {
+      return { canRegister: false, message: 'Registration has closed for this event' };
+    }
+  };
+
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
@@ -124,6 +161,29 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                   </option>
                 ))}
               </select>
+              {formData.eventId && (
+                <div className="mt-2">
+                  {(() => {
+                    const status = getRegistrationStatus(formData.eventId);
+                    return (
+                      <div className={`p-3 rounded-lg text-sm ${
+                        status.canRegister 
+                          ? 'bg-green-50 border border-green-200 text-green-800'
+                          : 'bg-yellow-50 border border-yellow-200 text-yellow-800'
+                      }`}>
+                        <div className="flex items-center">
+                          {status.canRegister ? (
+                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                          ) : (
+                            <Clock className="h-4 w-4 mr-2 text-yellow-600" />
+                          )}
+                          <span>{status.message}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
