@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon, Filter } from 'lucide-react';
+import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon, Filter, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Event, Attendee, Voucher } from '../types';
 import { usePagination } from '../hooks/usePagination';
 import { useSearch } from '../hooks/useSearch';
 import Pagination from './Pagination';
+import { lookupInternalUser } from '../services/userService';
 
 interface AttendeeManagementProps {
   events: Event[];
@@ -28,6 +29,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [rejectingAttendee, setRejectingAttendee] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isLookingUpUser, setIsLookingUpUser] = useState(false);
+  const [lookupError, setLookupError] = useState('');
+  const [lookupSuccess, setLookupSuccess] = useState(false);
   const [formData, setFormData] = useState({
     eventId: '',
     name: '',
@@ -89,9 +93,63 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
       department: '',
     });
     setShowForm(false);
+    setLookupError('');
+    setLookupSuccess(false);
     
     // Show success message for pending approval
     alert('Registration submitted successfully! Awaiting admin approval.');
+  };
+
+  const handleEmailLookup = async (email: string) => {
+    if (!email || !email.includes('@company.com')) {
+      setLookupError('');
+      setLookupSuccess(false);
+      return;
+    }
+
+    setIsLookingUpUser(true);
+    setLookupError('');
+    setLookupSuccess(false);
+
+    try {
+      const result = await lookupInternalUser(email);
+      
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          name: result.data!.name,
+          department: result.data!.department || prev.department,
+        }));
+        setLookupSuccess(true);
+        setLookupError('');
+      } else {
+        setLookupError(result.error || 'User not found');
+        setLookupSuccess(false);
+      }
+    } catch (error) {
+      setLookupError('Failed to lookup user details');
+      setLookupSuccess(false);
+    } finally {
+      setIsLookingUpUser(false);
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData({ ...formData, email });
+    
+    // Clear previous lookup state when email changes
+    if (email !== formData.email) {
+      setLookupError('');
+      setLookupSuccess(false);
+    }
+    
+    // Trigger lookup after user stops typing (debounced)
+    const timeoutId = setTimeout(() => {
+      handleEmailLookup(email);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   };
 
   const getEventName = (eventId: string) => {
@@ -268,22 +326,50 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
+                      lookupSuccess ? 'bg-green-50 border-green-300' : ''
+                    }`}
                     placeholder="John Doe"
+                    readOnly={lookupSuccess}
                   />
+                  {lookupSuccess && (
+                    <p className="text-xs text-green-600 mt-1">Auto-filled from internal directory</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                    placeholder="john.doe@company.com"
-                  />
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={handleEmailChange}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                      placeholder="john.doe@company.com"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      {isLookingUpUser && (
+                        <Loader2 className="h-4 w-4 text-coop-600 animate-spin" />
+                      )}
+                      {lookupSuccess && !isLookingUpUser && (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      )}
+                      {lookupError && !isLookingUpUser && (
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                      )}
+                    </div>
+                  </div>
+                  {lookupError && (
+                    <p className="text-red-600 text-sm mt-1">{lookupError}</p>
+                  )}
+                  {lookupSuccess && (
+                    <p className="text-green-600 text-sm mt-1">User details retrieved successfully</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter @company.com email to auto-fill details
+                  </p>
                 </div>
               </div>
 
@@ -308,9 +394,15 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                     type="text"
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 ${
+                      lookupSuccess ? 'bg-green-50 border-green-300' : ''
+                    }`}
                     placeholder="Marketing"
+                    readOnly={lookupSuccess}
                   />
+                  {lookupSuccess && (
+                    <p className="text-xs text-green-600 mt-1">Auto-filled from internal directory</p>
+                  )}
                 </div>
               </div>
 
@@ -326,6 +418,8 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       phone: '',
                       department: '',
                     });
+                    setLookupError('');
+                    setLookupSuccess(false);
                   }}
                   className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                 >
