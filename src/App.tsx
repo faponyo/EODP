@@ -62,12 +62,25 @@ function App() {
           email: 'admin@company.com',
           name: 'Admin User',
           role: 'admin',
+          status: 'active',
+          createdAt: new Date().toISOString(),
         },
         {
           id: '2',
-          email: 'user@company.com',
-          name: 'Regular User',
-          role: 'user',
+          email: 'internal@company.com',
+          name: 'Internal User',
+          role: 'internal',
+          status: 'active',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: '3',
+          email: 'external@company.com',
+          name: 'External User',
+          role: 'external',
+          status: 'active',
+          assignedEventIds: ['1'],
+          createdAt: new Date().toISOString(),
         },
       ];
       localStorage.setItem('users', JSON.stringify(demoUsers));
@@ -123,7 +136,10 @@ function App() {
           department: 'HR',
           registeredAt: new Date(Date.now() - 172800000).toISOString(),
           voucherId: 'voucher-2',
+          status: 'approved',
           submittedBy: '2',
+          reviewedBy: '1',
+          reviewedAt: new Date(Date.now() - 172400000).toISOString(),
         },
         {
           id: '3',
@@ -302,11 +318,11 @@ function App() {
       return attendee;
     }));
 
-    // Create voucher if it doesn't exist
+    // Create voucher for approved attendee if it doesn't exist
     const attendee = attendees.find(a => a.id === attendeeId);
     if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
       const newVoucher = createVoucher(attendeeId, attendee.eventId);
-      newVoucher.id = attendee.voucherId;
+      newVoucher.id = voucherId;
       setVouchers([...vouchers, newVoucher]);
     }
   };
