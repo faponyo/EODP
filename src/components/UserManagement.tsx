@@ -528,3 +528,5 @@ const UserManagement: React.FC<UserManagementProps> = ({
 };
 
 export default UserManagement;
+
+export default UserManagement
