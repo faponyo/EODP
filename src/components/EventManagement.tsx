@@ -123,9 +123,6 @@ const EventManagement: React.FC<EventManagementProps> = ({
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-gray-900">Attendees ({eventAttendees.length}/{selectedEvent.maxAttendees})</h3>
-                <div className="text-sm text-gray-600">
-                  {eventAttendees.filter(a => a.status === 'approved').length} approved, {eventAttendees.filter(a => a.status === 'pending').length} pending
-                </div>
                 {(() => {
                   const eventDate = new Date(selectedEvent.date);
                   const today = new Date();
@@ -147,25 +144,18 @@ const EventManagement: React.FC<EventManagementProps> = ({
                       </span>
                     </div>
                   );
-                          {approvedAttendees.length.toLocaleString()} / {event.maxAttendees.toLocaleString()}
+                })()}
               </div>
-                        <p className="text-xs text-gray-400">Approved</p>
+              {eventAttendees.length > 0 ? (
                 <div className="space-y-3">
                   {eventAttendees.slice(0, 10).map(attendee => (
                     <div key={attendee.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                              (approvedAttendees.length / event.maxAttendees) * 100 > 90 ? 'bg-red-500' : 
-                              (approvedAttendees.length / event.maxAttendees) * 100 > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                      <div>
+                        <p className="font-medium text-gray-900">{attendee.name}</p>
                         <p className="text-sm text-gray-600">{attendee.email}</p>
-                            style={{ width: `${Math.min((approvedAttendees.length / event.maxAttendees) * 100, 100)}%` }}
+                      </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-600">{attendee.department}</p>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          attendee.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          attendee.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {attendee.status}
-                        </span>
                       </div>
                     </div>
                   ))}
@@ -328,22 +318,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
-                  </div>
-                  {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                    <div className="flex items-center text-sm text-yellow-600">
-                      <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <span>{eventAttendees.filter(a => a.status === 'pending').length} pending approval</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <div className="bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100}%` }}
-                    ></div>
+                    <span>{eventAttendees.length} / {event.maxAttendees} attendees</span>
                   </div>
                 </div>
 
