@@ -351,7 +351,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
                   </div>
                   {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                    <div className=\"flex items-center text-sm text-yellow-600">
+                    <div className="flex items-center text-sm text-yellow-600">
                       <span>{eventAttendees.filter(a => a.status === 'pending').length} pending approval</span>
                     </div>
                   )}
