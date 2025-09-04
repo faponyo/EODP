@@ -596,11 +596,34 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h3 className="text-xl font-semibold text-gray-900">{event.name}</h3>
-                      {isUpcoming && (
-                        <span className="px-2 py-1 bg-coop-100 text-coop-800 text-xs font-medium rounded-full">
-                          Upcoming
-                        </span>
-                      )}
+                      {(() => {
+                        const eventDate = new Date(event.date);
+                        const today = new Date();
+                        const isToday = eventDate.toDateString() === today.toDateString();
+                        const isPast = eventDate < today && !isToday;
+                        const isUpcoming = eventDate > today;
+                        
+                        if (isToday) {
+                          return (
+                            <span className="px-2 py-1 bg-coop-600 text-white text-xs font-medium rounded-full animate-pulse">
+                              Today
+                            </span>
+                          );
+                        } else if (isUpcoming) {
+                          return (
+                            <span className="px-2 py-1 bg-coop-100 text-coop-800 text-xs font-medium rounded-full">
+                              Upcoming
+                            </span>
+                          );
+                        } else if (isPast) {
+                          return (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              Past
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                       {event.hasVouchers && (
                         <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full flex items-center space-x-1">
                           <TicketIcon className="h-3 w-3" />
@@ -653,9 +676,16 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     )}
 
                     {/* Event Timer for upcoming events */}
-                    {isUpcoming && (
+                    {(() => {
+                      const eventDate = new Date(event.date);
+                      const today = new Date();
+                      const isToday = eventDate.toDateString() === today.toDateString();
+                      const isUpcoming = eventDate > today;
+                      
+                      return (isUpcoming || isToday);
+                    })() && (
                       <div className="mb-4">
-                        <EventTimer eventDate={event.date} />
+                        <EventTimer eventDate={event.date} eventName={event.name} />
                       </div>
                     )}
 
