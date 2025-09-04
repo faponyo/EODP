@@ -270,9 +270,31 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
             </p>
           </div>
         </div>
-  React.useEffect(() => {
+
         {/* Search and Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => handleUploadForSubsidiary(selectedSubsidiaryForView.id)}
+              className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Upload Employees</span>
+            </button>
+          </div>
+        </div>
 
         {/* Employees List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -343,7 +365,7 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
               </div>
             )}
           </div>
-  }, [searchTerm, selectedSubsidiaryForView?.id]);
+
           {/* Pagination */}
           {viewModalEmployees.length > 0 && (
             <Pagination
@@ -358,6 +380,7 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
               }}
             />
           )}
+        </div>
       </div>
     );
   }
@@ -667,5 +690,6 @@ const getEmployeeCount = (subsidiaryId: string) => {
   if (!storedEmployees) return 0;
   const employees = JSON.parse(storedEmployees);
   return employees.filter((emp: SubsidiaryEmployee) => emp.subsidiaryId === subsidiaryId).length;
+};
 
 export default SubsidiaryManagement;
