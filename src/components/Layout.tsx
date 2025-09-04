@@ -8,9 +8,10 @@ interface LayoutProps {
   currentPage: string;
   onPageChange: (page: string) => void;
   events?: Event[];
+  selectedEvent?: Event | null;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, events = [] }) => {
+const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, events = [], selectedEvent }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
@@ -34,8 +35,27 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-coop-600 mr-3" />
-              <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 text-coop-600 mr-3" />
+                  <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
+                </div>
+                
+                {/* Selected Event Display for External Users */}
+                {user?.role === 'external' && selectedEvent && (
+                  <div className="hidden sm:flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
+                    <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
+                    <div>
+                      <p className="text-sm font-medium text-coop-900 truncate max-w-48">
+                        {selectedEvent.name}
+                      </p>
+                      <p className="text-xs text-coop-700">
+                        {new Date(selectedEvent.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {/* Mobile menu button */}
@@ -62,6 +82,23 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
               </button>
             </div>
           </div>
+          
+          {/* Mobile Selected Event Display */}
+          {user?.role === 'external' && selectedEvent && (
+            <div className="sm:hidden pb-4">
+              <div className="flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
+                <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
+                <div>
+                  <p className="text-sm font-medium text-coop-900">
+                    {selectedEvent.name}
+                  </p>
+                  <p className="text-xs text-coop-700">
+                    {new Date(selectedEvent.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
