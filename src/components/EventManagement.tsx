@@ -143,7 +143,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Registration Open
                         </span>
-                  const eventAttendees = attendees.filter(a => a.eventId === event.id);
+                        {pendingAttendees.length > 0 && (
                           <p className="text-xs text-yellow-600 mt-1">
                             {pendingAttendees.length} pending approval
                           </p>
@@ -167,25 +167,31 @@ const EventManagement: React.FC<EventManagementProps> = ({
                           (eventAttendees.filter(a => a.status === 'approved').length / selectedEvent.maxAttendees) * 100 > 70 ? 'bg-yellow-500' : 'bg-green-500'
                         }`}
                         style={{ width: `${Math.min((eventAttendees.filter(a => a.status === 'approved').length / selectedEvent.maxAttendees) * 100, 100)}%` }}
-                    {eventAttendees.length} registered
+                      ></div>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    {eventAttendees.slice(0, 10).map((attendee) => (
+                      <div key={attendee.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                        <div>
                           <p className="font-medium text-gray-900">{attendee.name}</p>
                           <p className="text-sm text-gray-600">{attendee.email}</p>
                         </div>
+                        <div>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                             attendee.status === 'approved' ? 'bg-green-100 text-green-800' :
                             attendee.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             'bg-red-100 text-red-800'
-                            {eventAttendees.length.toLocaleString()} / {selectedEvent.maxAttendees.toLocaleString()}
+                          }`}>
                             {attendee.status}
-                          <p className="text-xs text-gray-400">Registered</p>
+                          </span>
                         </div>
                       </div>
                     ))}
                     {eventAttendees.length > 10 && (
                       <p className="text-center text-gray-500">And {eventAttendees.length - 10} more...</p>
-                            (eventAttendees.length / selectedEvent.maxAttendees) * 100 > 90 ? 'bg-red-500' : 
-                            (eventAttendees.length / selectedEvent.maxAttendees) * 100 > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-4">No attendees registered yet</p>
@@ -345,8 +351,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
                   </div>
                   {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                          style={{ width: `${Math.min((eventAttendees.length / selectedEvent.maxAttendees) * 100, 100)}%` }}
-                      <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <div className=\"flex items-center text-sm text-yellow-600">
                       <span>{eventAttendees.filter(a => a.status === 'pending').length} pending approval</span>
                     </div>
                   )}
@@ -356,16 +361,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   <div className="bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(eventAttendees.length / event.maxAttendees) * 100}%` }}
+                      style={{ width: \`${(eventAttendees.filter(a => a.stat\us === 'approved').length / event.maxAttendees) * 100}%` }}
                     ></div>
                   </div>
                 </div>
@@ -383,8 +379,12 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   {user?.role === 'admin' && (
                     <>
                       <button
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              registered
+                        onClick={() => handleEdit(event)}
+                        className="bg-blue-100 text-blue-700 p-2 rounded-lg hover:bg-blue-200 transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => {
                           if (confirm('Are you sure you want to delete this event?')) {
                             onDeleteEvent(event.id);
