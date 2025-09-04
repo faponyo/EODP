@@ -109,10 +109,7 @@ function App() {
           department: 'Marketing',
           registeredAt: new Date(Date.now() - 86400000).toISOString(),
           voucherId: 'voucher-1',
-          status: 'approved',
           submittedBy: '2',
-          reviewedBy: '1',
-          reviewedAt: new Date(Date.now() - 86000000).toISOString(),
         },
         {
           id: '2',
@@ -305,7 +302,7 @@ function App() {
       return attendee;
     }));
 
-    // Create voucher for approved attendee if it doesn't exist
+    // Create voucher if it doesn't exist
     const attendee = attendees.find(a => a.id === attendeeId);
     if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
       const newVoucher = createVoucher(attendeeId, attendee.eventId);
@@ -370,39 +367,50 @@ function App() {
   }
 
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
+    <Layout currentPage={currentPage} onPageChange={setCurrentPage} events={filteredEvents}>
       {currentPage === 'dashboard' && (
-        <Dashboard events={events} attendees={attendees} vouchers={vouchers} />
+        <Dashboard events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
       )}
       {currentPage === 'events' && (
         <EventManagement
-          events={events}
-          attendees={attendees}
+          events={filteredEvents}
+          attendees={filteredAttendees}
           onCreateEvent={handleCreateEvent}
           onUpdateEvent={handleUpdateEvent}
           onDeleteEvent={handleDeleteEvent}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'attendees' && (
         <AttendeeManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
+          events={filteredEvents}
+          attendees={filteredAttendees}
+          vouchers={filteredVouchers}
           onRegisterAttendee={handleRegisterAttendee}
           onApproveRegistration={handleApproveRegistration}
           onRejectRegistration={handleRejectRegistration}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'vouchers' && (
         <VoucherManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
+          events={filteredEvents}
+          attendees={filteredAttendees}
+          vouchers={filteredVouchers}
           onClaimDrink={handleClaimDrink}
+          userRole={user?.role || 'internal'}
         />
       )}
       {currentPage === 'reports' && (
-        <Reports events={events} attendees={attendees} vouchers={vouchers} />
+        <Reports events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
+      )}
+      {currentPage === 'users' && user?.role === 'admin' && (
+        <UserManagement
+          events={events}
+          onCreateUser={handleCreateUser}
+          onUpdateUserStatus={handleUpdateUserStatus}
+          onUpdateUser={handleUpdateUser}
+        />
       )}
     </Layout>
   );
