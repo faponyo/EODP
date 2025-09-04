@@ -16,6 +16,7 @@ export interface Event {
   location: string;
   description: string;
   maxAttendees: number;
+  status?: 'active' | 'closed' | 'cancelled';
   hasVouchers: boolean;
   voucherCategories?: VoucherCategory[];
   createdAt: string;
