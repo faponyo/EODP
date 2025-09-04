@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Calendar, MapPin, Users, Plus, Edit2, Trash2, Eye, TicketIcon, X } from 'lucide-react';
 import { Event, Attendee } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { usePagination } from '../hooks/usePagination';
+import { useSearch } from '../hooks/useSearch';
+import Pagination from './Pagination';
 import EventTimer from './EventTimer';
 
 interface EventManagementProps {
@@ -22,7 +25,8 @@ const EventManagement: React.FC<EventManagementProps> = ({
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [currentView, setCurrentView] = useState<'list' | 'attendees'>('list');
+  const [selectedEventForView, setSelectedEventForView] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     date: '',
@@ -59,6 +63,24 @@ const EventManagement: React.FC<EventManagementProps> = ({
     });
     setShowForm(false);
   };
+
+  // Search functionality for attendees
+  const { searchTerm, setSearchTerm, filteredData: searchedAttendees } = useSearch(
+    attendees,
+    ['name', 'email', 'department']
+  );
+
+  // Filter attendees for viewing modal
+  const viewModalAttendees = React.useMemo(() => {
+    if (!selectedEventForView?.id) return [];
+    
+    let filtered = searchedAttendees.filter(att => att.eventId === selectedEventForView.id);
+    return filtered.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+  }, [searchedAttendees, selectedEventForView?.id]);
+
+  // Pagination
+  const pagination = usePagination(50);
+  const { paginatedData: paginatedAttendees, pagination: paginationInfo } = pagination.paginateData(viewModalAttendees);
 
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
@@ -121,130 +143,229 @@ const EventManagement: React.FC<EventManagementProps> = ({
     return attendees.filter(a => a.eventId === eventId);
   };
 
-  const EventDetailsModal = () => {
-    if (!selectedEvent) return null;
+  const handleViewAttendees = (event: Event) => {
+    setSelectedEventForView(event);
+    setCurrentView('attendees');
+    setSearchTerm(''); // Reset search when opening view
+    pagination.resetPage(); // Reset pagination
+  };
 
-    const eventAttendees = getEventAttendees(selectedEvent.id);
+  const handleBackToEvents = () => {
+    setCurrentView('list');
+    setSelectedEventForView(null);
+    setSearchTerm('');
+    pagination.resetPage();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-coop-yellow-100 text-coop-yellow-800';
+      case 'approved':
+        return 'bg-coop-100 text-coop-800';
+      case 'rejected':
+        return 'bg-coop-red-100 text-coop-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Render attendee view page
+  if (currentView === 'attendees' && selectedEventForView) {
+    const eventAttendees = getEventAttendees(selectedEventForView.id);
+    const approvedCount = eventAttendees.filter(a => a.status === 'approved').length;
+    const pendingCount = eventAttendees.filter(a => a.status === 'pending').length;
+    const rejectedCount = eventAttendees.filter(a => a.status === 'rejected').length;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">{selectedEvent.name}</h2>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
+      <div className="space-y-6">
+        {/* Header with back navigation */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleBackToEvents}
+            className="flex items-center space-x-2 text-coop-600 hover:text-coop-700 transition-colors"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Events</span>
+          </button>
+          <div className="h-6 w-px bg-gray-300"></div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedEventForView.name}</h1>
+            <p className="text-gray-600 mt-1">
+              {new Date(selectedEventForView.date).toLocaleDateString()} • {selectedEventForView.location} • {viewModalAttendees.length} attendees
+            </p>
+          </div>
+        </div>
+
+        {/* Event Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-coop-50 p-3 rounded-lg">
+                <Users className="h-6 w-6 text-coop-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{eventAttendees.length}</p>
+                <p className="text-sm text-gray-600">Total Registered</p>
+              </div>
             </div>
           </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span className="font-medium">Date</span>
-                </div>
-                <p className="text-gray-900">{new Date(selectedEvent.date).toLocaleDateString()}</p>
+          
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-coop-100 p-3 rounded-lg">
+                <Users className="h-6 w-6 text-coop-700" />
               </div>
-              <div>
-                <div className="flex items-center text-gray-600 mb-2">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span className="font-medium">Location</span>
-                </div>
-                <p className="text-gray-900">{selectedEvent.location}</p>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{approvedCount}</p>
+                <p className="text-sm text-gray-600">Approved</p>
               </div>
             </div>
-            
-            <div>
-              <h3 className="font-medium text-gray-900 mb-2">Description</h3>
-              <p className="text-gray-600">{selectedEvent.description}</p>
-            </div>
+          </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-gray-900">Attendees ({eventAttendees.length}/{selectedEvent.maxAttendees})</h3>
-                <div className="text-sm text-gray-600">
-                  {eventAttendees.filter(a => a.status === 'approved').length} approved, {eventAttendees.filter(a => a.status === 'pending').length} pending
-                </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-coop-yellow-50 p-3 rounded-lg">
+                <Users className="h-6 w-6 text-coop-yellow-600" />
               </div>
-              {eventAttendees.length > 0 ? (
-                <div>
-                  {(() => {
-                    const eventDate = new Date(selectedEvent.date);
-                    const today = new Date();
-                    eventDate.setHours(0, 0, 0, 0);
-                    today.setHours(0, 0, 0, 0);
-                    const approvedAttendees = eventAttendees.filter(a => a.status === 'approved');
-                    const pendingAttendees = eventAttendees.filter(a => a.status === 'pending');
-                    const isToday = eventDate.getTime() === today.getTime();
-                    
-                    return isToday && (
-                      <div className="mb-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Registration Open
-                        </span>
-                        {pendingAttendees.length > 0 && (
-                          <p className="text-xs text-yellow-600 mt-1">
-                            {pendingAttendees.length} pending approval
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  <div className="mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {eventAttendees.filter(a => a.status === 'approved').length} / {selectedEvent.maxAttendees}
-                        </p>
-                        <p className="text-xs text-gray-400">Approved</p>
-                      </div>
-                    </div>
-                    <div className="bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          (eventAttendees.filter(a => a.status === 'approved').length / selectedEvent.maxAttendees) * 100 > 90 ? 'bg-red-500' : 
-                          (eventAttendees.filter(a => a.status === 'approved').length / selectedEvent.maxAttendees) * 100 > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min((eventAttendees.filter(a => a.status === 'approved').length / selectedEvent.maxAttendees) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {eventAttendees.slice(0, 10).map((attendee) => (
-                      <div key={attendee.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-gray-900">{attendee.name}</p>
-                          <p className="text-sm text-gray-600">{attendee.email}</p>
-                        </div>
-                        <div>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            attendee.status === 'approved' ? 'bg-coop-100 text-coop-800' :
-                            attendee.status === 'pending' ? 'bg-coop-yellow-100 text-coop-yellow-800' :
-                            'bg-coop-red-100 text-coop-red-800'
-                          }`}>
-                            {attendee.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    {eventAttendees.length > 10 && (
-                      <p className="text-center text-gray-500">And {eventAttendees.length - 10} more...</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">No attendees registered yet</p>
-              )}
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
+                <p className="text-sm text-gray-600">Pending</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="bg-coop-red-50 p-3 rounded-lg">
+                <Users className="h-6 w-6 text-coop-red-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-2xl font-bold text-gray-900">{rejectedCount}</p>
+                <p className="text-sm text-gray-600">Rejected</p>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Search and Actions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <input
+                  type="text"
+                  placeholder="Search attendees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                />
+              </div>
+            </div>
+            <div className="text-sm text-gray-600">
+              Capacity: {approvedCount} / {selectedEventForView.maxAttendees}
+            </div>
+          </div>
+        </div>
+
+        {/* Attendees List */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Event Attendees</h2>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Users className="h-4 w-4" />
+                <span>Page {paginationInfo.page} of {pagination.totalPages(paginationInfo.total)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="divide-y divide-gray-200">
+            {paginatedAttendees.length > 0 ? (
+              paginatedAttendees.map((attendee) => (
+                <div key={attendee.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-medium text-gray-900">{attendee.name}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(attendee.status)}`}>
+                          {attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1)}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div className="space-y-1">
+                          <div className="flex items-center">
+                            <span className="font-medium w-20">Email:</span>
+                            <span>{attendee.email}</span>
+                          </div>
+                          {attendee.phone && (
+                            <div className="flex items-center">
+                              <span className="font-medium w-20">Phone:</span>
+                              <span>{attendee.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          {attendee.department && (
+                            <div className="flex items-center">
+                              <span className="font-medium w-20">Department:</span>
+                              <span>{attendee.department}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center">
+                            <span className="font-medium w-20">Registered:</span>
+                            <span>{new Date(attendee.registeredAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {attendee.status === 'rejected' && attendee.rejectionReason && (
+                        <div className="mt-3 p-3 bg-coop-red-50 border border-coop-red-200 rounded-lg">
+                          <p className="text-sm text-coop-red-800">
+                            <strong>Rejection Reason:</strong> {attendee.rejectionReason}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-12 text-center">
+                <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No attendees found</h3>
+                <p className="text-gray-600">
+                  {searchTerm
+                    ? "No attendees match your search criteria"
+                    : "No attendees have been registered for this event yet"
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {viewModalAttendees.length > 0 && (
+            <Pagination
+              currentPage={paginationInfo.page}
+              totalPages={pagination.totalPages(paginationInfo.total)}
+              pageSize={paginationInfo.pageSize}
+              totalItems={paginationInfo.total}
+              onPageChange={pagination.goToPage}
+              onPageSizeChange={(newPageSize) => {
+                pagination.setPageSize(newPageSize);
+                pagination.resetPage();
+              }}
+            />
+          )}
+        </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -322,280 +443,4 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     required
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                    placeholder="Grand Ballroom, Hotel Plaza"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max Attendees *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={formData.maxAttendees}
-                    onChange={(e) => setFormData({ ...formData, maxAttendees: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                  placeholder="Join us for an evening of celebration..."
-                />
-              </div>
-
-              {/* Voucher Configuration */}
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center space-x-3 mb-4">
-                  <input
-                    type="checkbox"
-                    id="hasVouchers"
-                    checked={formData.hasVouchers}
-                    onChange={(e) => {
-                      const hasVouchers = e.target.checked;
-                      setFormData({
-                        ...formData,
-                        hasVouchers,
-                        voucherCategories: hasVouchers ? formData.voucherCategories : [],
-                      });
-                    }}
-                    className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
-                  />
-                  <label htmlFor="hasVouchers" className="flex items-center text-sm font-medium text-gray-700">
-                    <TicketIcon className="h-4 w-4 mr-2" />
-                    Enable Vouchers for this Event
-                  </label>
-                </div>
-
-                {formData.hasVouchers && (
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900">Voucher Categories</h4>
-                      <button
-                        type="button"
-                        onClick={addVoucherCategory}
-                        className="bg-coop-600 text-white px-3 py-1 rounded text-sm hover:bg-coop-700 transition-colors flex items-center space-x-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Add Category</span>
-                      </button>
-                    </div>
-
-                    {formData.voucherCategories.length === 0 && (
-                      <div className="text-center py-4 text-gray-500 text-sm">
-                        No voucher categories added yet. Click "Add Category" to create one.
-                      </div>
-                    )}
-
-                    {formData.voucherCategories.map((category, index) => (
-                      <div key={category.id} className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="font-medium text-gray-800">Category {index + 1}</h5>
-                          <button
-                            type="button"
-                            onClick={() => removeVoucherCategory(category.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Category Name *
-                            </label>
-                            <input
-                              type="text"
-                              required={formData.hasVouchers}
-                              value={category.name}
-                              onChange={(e) => updateVoucherCategory(category.id, 'name', e.target.value)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
-                              placeholder="e.g., Soft Drinks, Meals"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Number of Items *
-                            </label>
-                            <input
-                              type="number"
-                              required={formData.hasVouchers}
-                              min="1"
-                              value={category.numberOfItems}
-                              onChange={(e) => updateVoucherCategory(category.id, 'numberOfItems', parseInt(e.target.value) || 1)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">
-                              Value (KES) *
-                            </label>
-                            <input
-                              type="number"
-                              required={formData.hasVouchers}
-                              min="0"
-                              step="0.01"
-                              value={category.value}
-                              onChange={(e) => updateVoucherCategory(category.id, 'value', parseFloat(e.target.value) || 0)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-coop-500 focus:border-coop-500"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {formData.hasVouchers && formData.voucherCategories.length === 0 && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p className="text-yellow-800 text-sm">
-                          <strong>Note:</strong> At least one voucher category is required when vouchers are enabled.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formData.hasVouchers && formData.voucherCategories.length === 0}
-                  className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors"
-                >
-                  {editingEvent ? 'Update Event' : 'Create Event'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Events List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => {
-          const eventAttendees = getEventAttendees(event.id);
-          const isUpcoming = new Date(event.date) > new Date();
-          
-          return (
-            <div key={event.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 truncate">{event.name}</h3>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      isUpcoming ? 'bg-coop-100 text-coop-800' : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {isUpcoming ? 'Upcoming' : 'Past'}
-                  </span>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{new Date(event.date).toLocaleDateString()}</span>
-                  </div>
-                  {isUpcoming && (
-                    <div className="mt-3">
-                      <EventTimer eventDate={event.date} eventName={event.name} compact />
-                    </div>
-                  )}
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">{event.location}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
-                  </div>
-                  {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                    <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
-                      <div className="text-sm font-medium text-coop-yellow-800 mb-1">Awaiting Approval</div>
-                      <div className="text-xs text-coop-yellow-700">Voucher will be issued after approval</div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <div className="bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-coop-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{event.description}</p>
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setSelectedEvent(event)}
-                    className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-1 text-sm"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View</span>
-                  </button>
-                  {user?.role === 'admin' && (
-                    <>
-                      <button
-                        onClick={() => handleEdit(event)}
-                        className="bg-coop-100 text-coop-700 p-2 rounded-lg hover:bg-coop-200 transition-colors"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this event?')) {
-                            onDeleteEvent(event.id);
-                          }
-                        }}
-                        className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {events.length === 0 && (
-        <div className="text-center py-12">
-          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No events created yet</h3>
-          <p className="text-gray-600">
-            {user?.role === 'admin' 
-              ? "Create your first event to get started" 
-              : "No events are currently available for registration"
-            }
-          </p>
-        </div>
-      )}
-
-      <EventDetailsModal />
-    </div>
-  );
-};
-
-export default EventManagement;
+                    className="w-full px-3 py-2 border border-gray-300 rounded-
