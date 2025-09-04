@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, LogOut, Calendar, Users, TicketIcon, BarChart3, UserCog } from 'lucide-react';
+import { User, LogOut, Calendar, Users, TicketIcon, BarChart3, UserCog, Menu, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Event } from '../types';
 
@@ -12,6 +12,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, events = [] }) => {
   const { user, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const baseNavigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -37,6 +38,14 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
               <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+              
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <User className="h-4 w-4" />
                 <span>{user?.name}</span>
@@ -59,15 +68,28 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar Navigation */}
-          <nav className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <nav className={`lg:w-64 flex-shrink-0 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
+            {/* Mobile overlay */}
+            {sidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+            
+            <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${
+              sidebarOpen ? 'fixed top-20 left-4 right-4 z-50 lg:relative lg:top-auto lg:left-auto lg:right-auto lg:z-auto' : ''
+            }`}>
               <ul className="space-y-2">
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <li key={item.id}>
                       <button
-                        onClick={() => onPageChange(item.id)}
+                        onClick={() => {
+                          onPageChange(item.id);
+                          setSidebarOpen(false); // Close sidebar on mobile after navigation
+                        }}
                         className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                           currentPage === item.id
                             ? 'bg-coop-50 text-coop-700 border-l-4 border-coop-600'
@@ -85,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, ev
           </nav>
 
           {/* Main Content */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             {children}
           </main>
         </div>
