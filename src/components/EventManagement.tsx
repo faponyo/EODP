@@ -623,6 +623,30 @@ const EventManagement: React.FC<EventManagementProps> = ({
                         <span>{approvedCount} / {event.maxAttendees} attendees</span>
                       </div>
                     </div>
+                   
+                   {/* Attendee Status Breakdown */}
+                   {eventAttendees.length > 0 && (
+                     <div className="mb-4">
+                       <div className="flex items-center space-x-4 text-sm">
+                         <div className="flex items-center space-x-1">
+                           <div className="w-2 h-2 bg-coop-600 rounded-full"></div>
+                           <span className="text-gray-600">Approved: {approvedCount}</span>
+                         </div>
+                         {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
+                           <div className="flex items-center space-x-1">
+                             <div className="w-2 h-2 bg-coop-yellow-500 rounded-full"></div>
+                             <span className="text-gray-600">Pending: {eventAttendees.filter(a => a.status === 'pending').length}</span>
+                           </div>
+                         )}
+                         {eventAttendees.filter(a => a.status === 'rejected').length > 0 && (
+                           <div className="flex items-center space-x-1">
+                             <div className="w-2 h-2 bg-coop-red-500 rounded-full"></div>
+                             <span className="text-gray-600">Rejected: {eventAttendees.filter(a => a.status === 'rejected').length}</span>
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   )}
                     
                     {event.description && (
                       <p className="text-gray-600 mb-4">{event.description}</p>
@@ -638,17 +662,27 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     {/* Voucher Categories Display */}
                     {event.hasVouchers && event.voucherCategories && event.voucherCategories.length > 0 && (
                       <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Voucher Categories:</h4>
+                       <div className="flex items-center space-x-2 mb-3">
+                         <TicketIcon className="h-4 w-4 text-purple-600" />
+                         <h4 className="text-sm font-medium text-gray-700">Voucher Categories</h4>
+                       </div>
                         <div className="flex flex-wrap gap-2">
                           {event.voucherCategories.map((category) => (
-                            <div key={category.id} className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-1 text-sm">
+                           <div key={category.id} className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-sm">
                               <span className="font-medium text-purple-800">{category.name}</span>
-                              <span className="text-purple-600 ml-2">
-                                {category.numberOfItems} × R{category.value.toFixed(2)}
-                              </span>
+                             <div className="text-purple-600 text-xs mt-1">
+                               <span>{category.numberOfItems} item{category.numberOfItems !== 1 ? 's' : ''}</span>
+                               <span className="mx-1">•</span>
+                               <span>R{category.value.toFixed(2)} each</span>
+                               <span className="mx-1">•</span>
+                               <span className="font-medium">Total: R{(category.numberOfItems * category.value).toFixed(2)}</span>
+                             </div>
                             </div>
                           ))}
                         </div>
+                       <div className="mt-2 text-xs text-gray-500">
+                         Total voucher value per attendee: R{event.voucherCategories.reduce((sum, cat) => sum + (cat.numberOfItems * cat.value), 0).toFixed(2)}
+                       </div>
                       </div>
                     )}
                   </div>
