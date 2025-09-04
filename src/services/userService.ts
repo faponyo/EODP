@@ -72,6 +72,99 @@ export const lookupInternalUser = async (email: string): Promise<UserLookupRespo
   }
 };
 
+export const lookupUserByPFForUserManagement = async (pfNumber: string): Promise<PFLookupResponse> => {
+  try {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Mock PF number database for user management
+    const pfDatabase = [
+      {
+        pfNumber: 'PF011',
+        name: 'Alice Johnson',
+        department: 'Human Resources',
+        email: 'alice.johnson@company.com'
+      },
+      {
+        pfNumber: 'PF012',
+        name: 'Bob Smith',
+        department: 'Finance',
+        email: 'bob.smith@company.com'
+      },
+      {
+        pfNumber: 'PF013',
+        name: 'Carol Davis',
+        department: 'Marketing',
+        email: 'carol.davis@company.com'
+      },
+      {
+        pfNumber: 'PF014',
+        name: 'Daniel Wilson',
+        department: 'IT Support',
+        email: 'daniel.wilson@company.com'
+      },
+      {
+        pfNumber: 'PF015',
+        name: 'Eva Brown',
+        department: 'Operations',
+        email: 'eva.brown@company.com'
+      },
+      {
+        pfNumber: 'PF016',
+        name: 'Frank Miller',
+        department: 'Legal',
+        email: 'frank.miller@company.com'
+      },
+      {
+        pfNumber: 'PF017',
+        name: 'Grace Lee',
+        department: 'Engineering',
+        email: 'grace.lee@company.com'
+      },
+      {
+        pfNumber: 'PF018',
+        name: 'Henry Taylor',
+        department: 'Sales',
+        email: 'henry.taylor@company.com'
+      },
+      {
+        pfNumber: 'PF019',
+        name: 'Iris Chen',
+        department: 'Customer Service',
+        email: 'iris.chen@company.com'
+      },
+      {
+        pfNumber: 'PF020',
+        name: 'Jack Anderson',
+        department: 'Compliance',
+        email: 'jack.anderson@company.com'
+      }
+    ];
+
+    const user = pfDatabase.find(u => u.pfNumber.toLowerCase() === pfNumber.toLowerCase());
+    
+    if (user) {
+      return {
+        success: true,
+        data: {
+          name: user.name,
+          department: user.department,
+          email: user.email
+        }
+      };
+    } else {
+      return {
+        success: false,
+        error: 'PF Number not found in employee directory'
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Failed to connect to employee directory service'
+    };
+  }
+};
 export interface PFLookupResponse {
   success: boolean;
   data?: {
