@@ -149,7 +149,8 @@ const AuthForm: React.FC = () => {
           <h4 className="font-medium text-gray-900 mb-2">Demo Accounts:</h4>
           <div className="text-sm text-gray-600 space-y-1">
             <p><strong>Admin:</strong> admin@company.com / admin123</p>
-            <p><strong>User:</strong> user@company.com / user123</p>
+            <p><strong>Internal:</strong> internal@company.com / internal123</p>
+            <p><strong>External:</strong> external@company.com / external123</p>
           </div>
         </div>
       </div>

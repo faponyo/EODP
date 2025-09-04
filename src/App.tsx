@@ -137,10 +137,7 @@ function App() {
           department: 'Engineering',
           registeredAt: new Date(Date.now() - 259200000).toISOString(),
           voucherId: 'voucher-3',
-          status: 'approved',
           submittedBy: '2',
-          reviewedBy: '1',
-          reviewedAt: new Date(Date.now() - 258800000).toISOString(),
         },
       ];
 
