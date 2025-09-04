@@ -67,14 +67,6 @@ function App() {
     localStorage.setItem('vouchers', JSON.stringify(vouchers));
   }, [vouchers]);
 
-  useEffect(() => {
-    localStorage.setItem('subsidiaries', JSON.stringify(subsidiaries));
-  }, [subsidiaries]);
-
-  useEffect(() => {
-    localStorage.setItem('subsidiaryEmployees', JSON.stringify(subsidiaryEmployees));
-  }, [subsidiaryEmployees]);
-
   const initializeDemoData = () => {
     // Initialize demo users if they don't exist
     const storedUsers = localStorage.getItem('users');
@@ -216,6 +208,198 @@ function App() {
       setEvents(demoEvents);
       setAttendees(demoAttendees);
       setVouchers(demoVouchers);
+    }
+
+    // Initialize demo subsidiaries if none exist
+    const storedSubsidiaries = localStorage.getItem('subsidiaries');
+    if (!storedSubsidiaries || JSON.parse(storedSubsidiaries).length === 0) {
+      const demoSubsidiaries: Subsidiary[] = [
+        {
+          id: '1',
+          name: 'Co-op Insurance Company Ltd',
+          code: 'COINS',
+          description: 'Leading insurance provider offering comprehensive coverage solutions',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(), // 30 days ago
+          createdBy: '1',
+        },
+        {
+          id: '2',
+          name: 'Co-op Trust Investment Services',
+          code: 'TRUST',
+          description: 'Investment and wealth management services for corporate and individual clients',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(), // 20 days ago
+          createdBy: '1',
+        },
+        {
+          id: '3',
+          name: 'Co-op Development Finance',
+          code: 'DEVFIN',
+          description: 'Development finance and project funding solutions',
+          createdAt: new Date(Date.now() - 864000000).toISOString(), // 10 days ago
+          createdBy: '1',
+        },
+      ];
+
+      const demoSubsidiaryEmployees: SubsidiaryEmployee[] = [
+        // Co-op Insurance Company Ltd employees
+        {
+          id: 'emp-1',
+          subsidiaryId: '1',
+          pfNumber: 'COINS001',
+          name: 'Alice Cooper',
+          email: 'alice.cooper@coopinsurance.com',
+          department: 'Underwriting',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-2',
+          subsidiaryId: '1',
+          pfNumber: 'COINS002',
+          name: 'Bob Wilson',
+          email: 'bob.wilson@coopinsurance.com',
+          department: 'Claims',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-3',
+          subsidiaryId: '1',
+          pfNumber: 'COINS003',
+          name: 'Carol Martinez',
+          email: 'carol.martinez@coopinsurance.com',
+          department: 'Sales',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-4',
+          subsidiaryId: '1',
+          pfNumber: 'COINS004',
+          name: 'David Thompson',
+          email: 'david.thompson@coopinsurance.com',
+          department: 'Risk Management',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-5',
+          subsidiaryId: '1',
+          pfNumber: 'COINS005',
+          name: 'Emma Rodriguez',
+          email: 'emma.rodriguez@coopinsurance.com',
+          department: 'Customer Service',
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
+          uploadedBy: '1',
+        },
+
+        // Co-op Trust Investment Services employees
+        {
+          id: 'emp-6',
+          subsidiaryId: '2',
+          pfNumber: 'TRUST001',
+          name: 'Frank Anderson',
+          email: 'frank.anderson@cooptrust.com',
+          department: 'Portfolio Management',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-7',
+          subsidiaryId: '2',
+          pfNumber: 'TRUST002',
+          name: 'Grace Miller',
+          email: 'grace.miller@cooptrust.com',
+          department: 'Investment Advisory',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-8',
+          subsidiaryId: '2',
+          pfNumber: 'TRUST003',
+          name: 'Henry Davis',
+          email: 'henry.davis@cooptrust.com',
+          department: 'Research',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-9',
+          subsidiaryId: '2',
+          pfNumber: 'TRUST004',
+          name: 'Iris Johnson',
+          email: 'iris.johnson@cooptrust.com',
+          department: 'Client Relations',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-10',
+          subsidiaryId: '2',
+          pfNumber: 'TRUST005',
+          name: 'Jack Brown',
+          email: 'jack.brown@cooptrust.com',
+          department: 'Compliance',
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
+          uploadedBy: '1',
+        },
+
+        // Co-op Development Finance employees
+        {
+          id: 'emp-11',
+          subsidiaryId: '3',
+          pfNumber: 'DEVFIN001',
+          name: 'Kate Wilson',
+          email: 'kate.wilson@coopdevfin.com',
+          department: 'Project Finance',
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-12',
+          subsidiaryId: '3',
+          pfNumber: 'DEVFIN002',
+          name: 'Leo Garcia',
+          email: 'leo.garcia@coopdevfin.com',
+          department: 'Credit Analysis',
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-13',
+          subsidiaryId: '3',
+          pfNumber: 'DEVFIN003',
+          name: 'Maya Lee',
+          email: 'maya.lee@coopdevfin.com',
+          department: 'Business Development',
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-14',
+          subsidiaryId: '3',
+          pfNumber: 'DEVFIN004',
+          name: 'Noah Taylor',
+          email: 'noah.taylor@coopdevfin.com',
+          department: 'Risk Assessment',
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
+          uploadedBy: '1',
+        },
+        {
+          id: 'emp-15',
+          subsidiaryId: '3',
+          pfNumber: 'DEVFIN005',
+          name: 'Olivia Chen',
+          email: 'olivia.chen@coopdevfin.com',
+          department: 'Operations',
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
+          uploadedBy: '1',
+        },
+      ];
+
+      setSubsidiaries(demoSubsidiaries);
+      setSubsidiaryEmployees(demoSubsidiaryEmployees);
     }
   };
 
