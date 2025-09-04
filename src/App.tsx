@@ -16,7 +16,7 @@ import NoAccessPage from './components/NoAccessPage';
 import EventSelector from './components/EventSelector';
 
 function App() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [currentPage, setCurrentPage] = useState('dashboard');
   
