@@ -156,10 +156,7 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <div className="flex justify-between items-center mb-2">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            (eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100 > 90 ? 'bg-coop-red-500' : 
-                            (eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100 > 70 ? 'bg-coop-yellow-500' : 'bg-coop-500'
-                          }`}
+                          {eventAttendees.filter(a => a.status === 'approved').length} / {selectedEvent.maxAttendees}
                         </p>
                         <p className="text-xs text-gray-400">Approved</p>
                       </div>
@@ -367,15 +364,16 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   )}
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
-                      <div className="text-sm font-medium text-coop-yellow-800 mb-1">Awaiting Approval</div>
-                      <div className="text-xs text-coop-yellow-700">Voucher will be issued after approval</div>
+                    <span className="truncate">{event.location}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600">
                     <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
                   </div>
                   {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                    <div className="bg-coop-red-50 border border-coop-red-200 rounded-lg p-3 min-w-[200px] text-center">
-                      <div className="text-sm font-medium text-coop-red-800">Registration Rejected</div>
+                    <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
+                      <div className="text-sm font-medium text-coop-yellow-800 mb-1">Awaiting Approval</div>
+                      <div className="text-xs text-coop-yellow-700">Voucher will be issued after approval</div>
                     </div>
                   )}
                 </div>
