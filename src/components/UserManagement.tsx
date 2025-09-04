@@ -159,7 +159,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2"
         >
           <UserPlus className="h-4 w-4" />
           <span>Create User</span>
@@ -183,7 +183,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                   placeholder="John Doe"
                 />
               </div>
@@ -196,7 +196,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                   placeholder="john.doe@company.com"
                 />
               </div>
@@ -218,7 +218,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       assignedEventIds: role === 'external' ? formData.assignedEventIds : []
                     });
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 >
                   <option value="internal">Internal User</option>
                   <option value="external">External User</option>
@@ -238,7 +238,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   required
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'disabled' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 >
                   <option value="active">Active</option>
                   <option value="disabled">Disabled</option>
@@ -270,7 +270,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                             });
                           }
                         }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
                       />
                       <span className="text-sm text-gray-700">
                         {event.name} - {new Date(event.date).toLocaleDateString()}
@@ -287,7 +287,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <div className="flex space-x-3">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors"
               >
                 {editingUser ? 'Update User' : 'Create User'}
               </button>
@@ -318,7 +318,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                 placeholder="Search by name or email..."
               />
             </div>
@@ -328,7 +328,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="all">All Roles</option>
               <option value="admin">Administrators</option>
@@ -341,7 +341,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
@@ -361,7 +361,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 setSelectedRole('all');
                 setSelectedStatus('all');
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-coop-600 hover:text-coop-700 font-medium"
             >
               Clear filters
             </button>
@@ -413,7 +413,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                           {user.assignedEventIds.map(eventId => {
                             const event = events.find(e => e.id === eventId);
                             return event ? (
-                              <span key={eventId} className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                              <span key={eventId} className="inline-flex items-center px-2 py-1 bg-coop-50 text-coop-700 rounded-full text-xs">
                                 <Calendar className="h-3 w-3 mr-1" />
                                 {event.name}
                               </span>
@@ -427,7 +427,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                   <div className="mt-4 lg:mt-0 lg:ml-6 flex space-x-2">
                     <button
                       onClick={() => handleEdit(user)}
-                      className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors flex items-center space-x-1 text-sm"
+                      className="bg-coop-100 text-coop-700 px-3 py-2 rounded-lg hover:bg-coop-200 transition-colors flex items-center space-x-1 text-sm"
                     >
                       <Edit2 className="h-4 w-4" />
                       <span>Edit</span>
