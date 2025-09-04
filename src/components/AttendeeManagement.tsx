@@ -132,7 +132,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
-  }, [filteredAttendees.length]);
+  }, [searchTerm, selectedEvent, selectedDepartment]);
 
   return (
     <div className="space-y-6">
@@ -327,6 +327,50 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
 
       {/* Attendees List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Rejection Modal */}
+        {rejectingAttendee && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Reject Registration
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection *
+                </label>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Please provide a reason for rejection..."
+                  rows={3}
+                  maxLength={200}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This reason will be recorded for audit purposes
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleRejectSubmit}
+                  disabled={!rejectionReason.trim()}
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Reject Registration
+                </button>
+                <button
+                  onClick={handleRejectCancel}
+                  className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
