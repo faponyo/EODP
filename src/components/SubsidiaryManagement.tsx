@@ -22,8 +22,8 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
   const [employees, setEmployees] = useState<SubsidiaryEmployee[]>([]);
   const [showSubsidiaryForm, setShowSubsidiaryForm] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
-  const [showEmployeesModal, setShowEmployeesModal] = useState(false);
-  const [selectedSubsidiaryForView, setSelectedSubsidiaryForView] = useState<string>('');
+  const [currentView, setCurrentView] = useState<'list' | 'employees'>('list');
+  const [selectedSubsidiaryForView, setSelectedSubsidiaryForView] = useState<Subsidiary | null>(null);
   const [editingSubsidiary, setEditingSubsidiary] = useState<Subsidiary | null>(null);
   const [selectedSubsidiary, setSelectedSubsidiary] = useState<string>('');
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
@@ -56,11 +56,11 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
 
   // Filter employees for viewing modal
   const viewModalEmployees = useMemo(() => {
-    if (!selectedSubsidiaryForView) return [];
+    if (!selectedSubsidiaryForView?.id) return [];
     
-    let filtered = searchedEmployees.filter(emp => emp.subsidiaryId === selectedSubsidiaryForView);
+    let filtered = searchedEmployees.filter(emp => emp.subsidiaryId === selectedSubsidiaryForView.id);
     return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [searchedEmployees, selectedSubsidiaryForView]);
+  }, [searchedEmployees, selectedSubsidiaryForView?.id]);
 
   // Pagination
   const pagination = usePagination(50);
@@ -228,26 +228,176 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
     return subsidiaries.find(s => s.id === subsidiaryId)?.name || 'Unknown Subsidiary';
   };
 
-  const getEmployeeCount = (subsidiaryId: string) => {
-    return employees.filter(emp => emp.subsidiaryId === subsidiaryId).length;
-  };
+  const handleViewEmployees = (subsidiary: Subsidiary) => {
+    setSelectedSubsidiaryForView(subsidiary);
+    setCurrentView('employees');
 
   const handleViewEmployees = (subsidiaryId: string) => {
     setSelectedSubsidiaryForView(subsidiaryId);
     setShowEmployeesModal(true);
+  const handleBackToSubsidiaries = () => {
+    setCurrentView('list');
+    setSelectedSubsidiaryForView(null);
+    setSearchTerm('');
+    pagination.resetPage();
+  };
     setSearchTerm(''); // Reset search when opening modal
     pagination.resetPage(); // Reset pagination
   };
 
   const handleUploadForSubsidiary = (subsidiaryId: string) => {
     setSelectedSubsidiary(subsidiaryId);
-    setShowUploadForm(true);
-  };
-
-  // Reset pagination when filters change
+  // Render employee view page
+  if (currentView === 'employees' && selectedSubsidiaryForView) {
+    return (
+      <div className="space-y-6">
+        {/* Header with back navigation */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={handleBackToSubsidiaries}
+            className="flex items-center space-x-2 text-coop-600 hover:text-coop-700 transition-colors"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Subsidiaries</span>
+          </button>
+          <div className="h-6 w-px bg-gray-300"></div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{selectedSubsidiaryForView.name}</h1>
+            <p className="text-gray-600 mt-1">
+              {selectedSubsidiaryForView.code} • {viewModalEmployees.length} employees
+            </p>
+          </div>
+        </div>
   React.useEffect(() => {
+        {/* Search and Actions */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                  placeholder="Search employees by PF, name, email, or department..."
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => handleUploadForSubsidiary(selectedSubsidiaryForView.id)}
+              className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Upload Employees</span>
+            </button>
+          </div>
+          
+          {searchTerm && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                Showing {viewModalEmployees.length} employees
+              </p>
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-sm text-coop-600 hover:text-coop-700 font-medium"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
+        </div>
     pagination.resetPage();
-  }, [searchTerm, selectedSubsidiaryForView]);
+        {/* Employees List */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Employees</h2>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Users className="h-4 w-4" />
+                <span>Page {paginationInfo.page} of {pagination.totalPages(paginationInfo.total)}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="divide-y divide-gray-200">
+            {paginatedEmployees.length > 0 ? (
+              paginatedEmployees.map((employee) => (
+                <div key={employee.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-medium text-gray-900">{employee.name}</h4>
+                        <span className="px-3 py-1 bg-coop-100 text-coop-800 rounded-full text-sm font-medium">
+                          {employee.pfNumber}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div className="space-y-1">
+                          <div className="flex items-center">
+                            <span className="font-medium w-20">Email:</span>
+                            <span>{employee.email}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="font-medium w-20">Department:</span>
+                            <span>{employee.department}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center">
+                            <span className="font-medium w-20">Uploaded:</span>
+                            <span>{new Date(employee.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-12 text-center">
+                <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No employees found</h3>
+                <p className="text-gray-600">
+                  {searchTerm
+                    ? "No employees match your search criteria"
+                    : "No employees have been uploaded for this subsidiary yet"
+                  }
+                </p>
+                {!searchTerm && (
+                  <button
+                    onClick={() => handleUploadForSubsidiary(selectedSubsidiaryForView.id)}
+                    className="mt-4 bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2 mx-auto"
+                  >
+                    <Upload className="h-4 w-4" />
+                    <span>Upload Employees</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+  }, [searchTerm, selectedSubsidiaryForView?.id]);
+          {/* Pagination */}
+          {viewModalEmployees.length > 0 && (
+            <Pagination
+              currentPage={paginationInfo.page}
+              totalPages={pagination.totalPages(paginationInfo.total)}
+              pageSize={paginationInfo.pageSize}
+              totalItems={paginationInfo.total}
+              onPageChange={pagination.goToPage}
+              onPageSizeChange={(newPageSize) => {
+                pagination.setPageSize(newPageSize);
+                pagination.resetPage();
+              }}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -353,118 +503,6 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* View Employees Modal */}
-      {showEmployeesModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {subsidiaries.find(s => s.id === selectedSubsidiaryForView)?.name} - Employees
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowEmployeesModal(false);
-                    setSelectedSubsidiaryForView('');
-                    setSearchTerm('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              {/* Search for employees in modal */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                    placeholder="Search employees by PF, name, email, or department..."
-                  />
-                </div>
-                {searchTerm && (
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
-                      Showing {viewModalEmployees.length} employees
-                    </p>
-                    <button
-                      onClick={() => setSearchTerm('')}
-                      className="text-sm text-coop-600 hover:text-coop-700 font-medium"
-                    >
-                      Clear search
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Employees List */}
-              <div className="space-y-4">
-                {paginatedEmployees.length > 0 ? (
-                  paginatedEmployees.map((employee) => (
-                    <div key={employee.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h4 className="font-medium text-gray-900">{employee.name}</h4>
-                            <span className="px-2 py-1 bg-coop-100 text-coop-800 rounded-full text-sm font-medium">
-                              {employee.pfNumber}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                            <div>
-                              <p><strong>Email:</strong> {employee.email}</p>
-                              <p><strong>Department:</strong> {employee.department}</p>
-                            </div>
-                            <div>
-                              <p><strong>Uploaded:</strong> {new Date(employee.createdAt).toLocaleDateString()}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No employees found</h3>
-                    <p className="text-gray-600">
-                      {searchTerm
-                        ? "No employees match your search criteria"
-                        : "No employees have been uploaded for this subsidiary yet"
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination for modal */}
-              {viewModalEmployees.length > 0 && (
-                <div className="mt-6">
-                  <Pagination
-                    currentPage={paginationInfo.page}
-                    totalPages={pagination.totalPages(paginationInfo.total)}
-                    pageSize={paginationInfo.pageSize}
-                    totalItems={paginationInfo.total}
-                    onPageChange={pagination.goToPage}
-                    onPageSizeChange={(newPageSize) => {
-                      pagination.setPageSize(newPageSize);
-                      pagination.resetPage();
-                    }}
-                  />
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -617,7 +655,7 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
 
                   <div className="flex flex-wrap gap-2">
                     <button
-                      onClick={() => handleViewEmployees(subsidiary.id)}
+                      onClick={() => handleViewEmployees(subsidiary)}
                       className="bg-coop-blue-100 text-coop-blue-700 px-3 py-2 rounded-lg hover:bg-coop-blue-200 transition-colors flex items-center space-x-1"
                     >
                       <Users className="h-4 w-4" />
