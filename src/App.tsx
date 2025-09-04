@@ -67,6 +67,14 @@ function App() {
     localStorage.setItem('vouchers', JSON.stringify(vouchers));
   }, [vouchers]);
 
+  useEffect(() => {
+    localStorage.setItem('subsidiaries', JSON.stringify(subsidiaries));
+  }, [subsidiaries]);
+
+  useEffect(() => {
+    localStorage.setItem('subsidiaryEmployees', JSON.stringify(subsidiaryEmployees));
+  }, [subsidiaryEmployees]);
+
   const initializeDemoData = () => {
     // Initialize demo users if they don't exist
     const storedUsers = localStorage.getItem('users');
