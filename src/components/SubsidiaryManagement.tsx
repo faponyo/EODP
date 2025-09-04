@@ -231,22 +231,22 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
   const handleViewEmployees = (subsidiary: Subsidiary) => {
     setSelectedSubsidiaryForView(subsidiary);
     setCurrentView('employees');
+    setSearchTerm(''); // Reset search when opening modal
+    pagination.resetPage(); // Reset pagination
+  };
 
-  const handleViewEmployees = (subsidiaryId: string) => {
-    setSelectedSubsidiaryForView(subsidiaryId);
-    setShowEmployeesModal(true);
   const handleBackToSubsidiaries = () => {
     setCurrentView('list');
     setSelectedSubsidiaryForView(null);
     setSearchTerm('');
     pagination.resetPage();
   };
-    setSearchTerm(''); // Reset search when opening modal
-    pagination.resetPage(); // Reset pagination
-  };
 
   const handleUploadForSubsidiary = (subsidiaryId: string) => {
     setSelectedSubsidiary(subsidiaryId);
+    setShowUploadForm(true);
+  };
+
   // Render employee view page
   if (currentView === 'employees' && selectedSubsidiaryForView) {
     return (
@@ -273,46 +273,7 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
   React.useEffect(() => {
         {/* Search and Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus
-    )
-  }
-}:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                  placeholder="Search employees by PF, name, email, or department..."
-                />
-              </div>
-            </div>
-            <button
-              onClick={() => handleUploadForSubsidiary(selectedSubsidiaryForView.id)}
-              className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Upload Employees</span>
-            </button>
-          </div>
-          
-          {searchTerm && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing {viewModalEmployees.length} employees
-              </p>
-              <button
-                onClick={() => setSearchTerm('')}
-                className="text-sm text-coop-600 hover:text-coop-700 font-medium"
-              >
-                Clear search
-              </button>
-            </div>
-          )}
-        </div>
-    pagination.resetPage();
+
         {/* Employees List */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
@@ -397,7 +358,6 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
               }}
             />
           )}
-        </div>
       </div>
     );
   }
@@ -701,5 +661,11 @@ const SubsidiaryManagement: React.FC<SubsidiaryManagementProps> = ({
     </div>
   );
 };
+
+const getEmployeeCount = (subsidiaryId: string) => {
+  const storedEmployees = localStorage.getItem('subsidiaryEmployees');
+  if (!storedEmployees) return 0;
+  const employees = JSON.parse(storedEmployees);
+  return employees.filter((emp: SubsidiaryEmployee) => emp.subsidiaryId === subsidiaryId).length;
 
 export default SubsidiaryManagement;
