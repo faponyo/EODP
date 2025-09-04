@@ -169,7 +169,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
             <select
               value={selectedReport}
               onChange={(e) => setSelectedReport(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="overview">Overview Report</option>
               <option value="attendees">Attendee Report</option>
@@ -183,7 +183,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
             <select
               value={selectedEvent}
               onChange={(e) => setSelectedEvent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
             >
               <option value="all">All Events</option>
               {events.map((event) => (
@@ -202,8 +202,8 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-600" />
+                <div className="bg-coop-50 p-3 rounded-lg">
+                  <Calendar className="h-6 w-6 text-coop-600" />
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">{stats.totalEvents}</p>
@@ -214,8 +214,8 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <Users className="h-6 w-6 text-green-600" />
+                <div className="bg-coop-100 p-3 rounded-lg">
+                  <Users className="h-6 w-6 text-coop-700" />
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">{stats.totalAttendees.toLocaleString()}</p>
@@ -226,8 +226,8 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <TicketIcon className="h-6 w-6 text-purple-600" />
+                <div className="bg-coop-blue-50 p-3 rounded-lg">
+                  <TicketIcon className="h-6 w-6 text-coop-blue-600" />
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">{stats.totalVouchers.toLocaleString()}</p>
@@ -238,8 +238,8 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-orange-600" />
+                <div className="bg-coop-orange-50 p-3 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-coop-orange-600" />
                 </div>
                 <div className="ml-4">
                   <p className="text-2xl font-bold text-gray-900">{stats.totalDrinksClaimed.toLocaleString()}</p>
@@ -260,7 +260,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
                 <div className="text-sm text-gray-600">Soft Drinks Used</div>
                 <div className="mt-2 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-coop-500 h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${stats.totalVouchers > 0 ? (stats.totalSoftDrinksClaimed / (stats.totalVouchers * 2)) * 100 : 0}%` 
                     }}
@@ -269,13 +269,13 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
               </div>
 
               <div className="text-center">
-                <div className="text-4xl font-bold text-orange-600 mb-2">
+                <div className="text-4xl font-bold text-coop-orange-600 mb-2">
                   {stats.totalVouchers > 0 ? Math.round((stats.totalHardDrinksClaimed / (stats.totalVouchers * 2)) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-600">Hard Drinks Used</div>
                 <div className="mt-2 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-coop-orange-500 h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${stats.totalVouchers > 0 ? (stats.totalHardDrinksClaimed / (stats.totalVouchers * 2)) * 100 : 0}%` 
                     }}
@@ -284,13 +284,13 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
               </div>
 
               <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">
+                <div className="text-4xl font-bold text-coop-700 mb-2">
                   {stats.maxPossibleDrinks > 0 ? Math.round((stats.totalDrinksClaimed / stats.maxPossibleDrinks) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-600">Overall Utilization</div>
                 <div className="mt-2 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-coop-600 h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${stats.maxPossibleDrinks > 0 ? (stats.totalDrinksClaimed / stats.maxPossibleDrinks) * 100 : 0}%` 
                     }}
@@ -362,7 +362,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
                         <div className="flex items-center">
                           <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                             <div 
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              className="bg-coop-500 h-2 rounded-full transition-all duration-300"
                               style={{ width: `${utilizationRate}%` }}
                             ></div>
                           </div>
@@ -470,7 +470,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
           <button
             onClick={exportAttendeeList}
             disabled={filteredAttendees.length === 0}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />
             <span>Export Attendees ({filteredAttendees.length.toLocaleString()})</span>
@@ -479,16 +479,16 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
           <button
             onClick={exportVoucherUsage}
             disabled={filteredVouchers.length === 0}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="bg-coop-700 text-white px-4 py-2 rounded-lg hover:bg-coop-800 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />
             <span>Export Vouchers ({filteredVouchers.length.toLocaleString()})</span>
           </button>
         </div>
         
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Performance Optimizations:</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="mt-4 p-4 bg-coop-50 rounded-lg">
+          <h4 className="font-medium text-coop-900 mb-2">Performance Optimizations:</h4>
+          <ul className="text-sm text-coop-800 space-y-1">
             <li>• Pagination limits display to manageable chunks (25-200 items per page)</li>
             <li>• Search and filtering use optimized algorithms for large datasets</li>
             <li>• Data exports handle thousands of records efficiently</li>
