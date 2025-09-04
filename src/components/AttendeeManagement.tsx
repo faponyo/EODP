@@ -78,13 +78,19 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // For external users, use the selected event automatically
+    const eventId = userRole === 'external' && events.length === 1 ? events[0].id : formData.eventId;
+    
     // Check if registration is allowed for the selected event
-    if (!isEventRegistrationOpen(formData.eventId)) {
+    if (!isEventRegistrationOpen(eventId)) {
       alert('Registration is only allowed on the event day');
       return;
     }
     
-    onRegisterAttendee(formData);
+    onRegisterAttendee({
+      ...formData,
+      eventId
+    });
     setFormData({
       eventId: '',
       name: '',
@@ -289,23 +295,31 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Event *
                 </label>
-                <select
-                  required
-                  value={formData.eventId}
-                  onChange={(e) => setFormData({ ...formData, eventId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
-                >
-                  <option value="">Choose an event...</option>
-                  {events.map((event) => (
-                    <option key={event.id} value={event.id}>
-                      {event.name} - {new Date(event.date).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-                {formData.eventId && (
+                {userRole === 'external' && events.length === 1 ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                    <span className="text-gray-900">{events[0].name} - {new Date(events[0].date).toLocaleDateString()}</span>
+                    <p className="text-sm text-gray-600 mt-1">Event automatically selected</p>
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={formData.eventId}
+                    onChange={(e) => setFormData({ ...formData, eventId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                  >
+                    <option value="">Choose an event...</option>
+                    {events.map((event) => (
+                      <option key={event.id} value={event.id}>
+                        {event.name} - {new Date(event.date).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {(formData.eventId || (userRole === 'external' && events.length === 1)) && (
                   <div className="mt-2">
                     {(() => {
-                      const status = getRegistrationStatus(formData.eventId);
+                      const eventId = userRole === 'external' && events.length === 1 ? events[0].id : formData.eventId;
+                      const status = getRegistrationStatus(eventId);
                       return (
                         <p className={`text-sm ${status.canRegister ? 'text-green-600' : 'text-yellow-600'}`}>
                           {status.message}
@@ -427,7 +441,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={!formData.eventId || !isEventRegistrationOpen(formData.eventId)}
+                  disabled={userRole === 'external' && events.length === 1 ? 
+                    !isEventRegistrationOpen(events[0].id) : 
+                    !formData.eventId || !isEventRegistrationOpen(formData.eventId)}
                   className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Register Attendee
