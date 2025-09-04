@@ -22,7 +22,7 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     // Simple authentication logic (in real app, this would call an API)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((u: User) => u.email === email && u.status === 'active');
+    const user = users.find((u: User) => u.email === email);
     
     // Demo credentials for testing
     const demoCredentials = [
@@ -33,7 +33,7 @@ export const useAuth = () => {
     
     const validDemo = demoCredentials.find(cred => cred.email === email && cred.password === password);
     
-    if (user) {
+    if (user && user.status === 'active') {
       localStorage.setItem('currentUser', JSON.stringify(user));
       setAuthState({
         user,
@@ -58,6 +58,8 @@ export const useAuth = () => {
         isAuthenticated: true,
       });
       return { success: true };
+    } else if (user && user.status === 'disabled') {
+      return { success: false, error: 'Account is disabled. Please contact administrator.' };
     }
     
     return { success: false, error: 'Invalid credentials' };
