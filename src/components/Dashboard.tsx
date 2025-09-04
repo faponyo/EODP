@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, Users, TicketIcon, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Calendar, Users, TicketIcon, TrendingUp, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Event, Attendee, Voucher } from '../types';
 
 interface DashboardProps {
@@ -9,28 +9,71 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) => {
-  const totalEvents = events.length;
-  const totalAttendees = attendees.length;
-  const totalVouchers = vouchers.length;
-  const claimedVouchers = vouchers.filter(v => v.isFullyClaimed).length;
-  const totalDrinksClaimed = vouchers.reduce(
-    (sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 
-    0
-  );
+  // Memoize expensive calculations for performance
+  const stats = useMemo(() => {
+    const totalEvents = events.length;
+    const totalAttendees = attendees.length;
+    const totalVouchers = vouchers.length;
+    const claimedVouchers = vouchers.filter(v => v.isFullyClaimed).length;
+    const totalDrinksClaimed = vouchers.reduce(
+      (sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 
+      0
+    );
 
-  const upcomingEvents = events
-    .filter(e => new Date(e.date) > new Date())
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 3);
+    return {
+      totalEvents,
+      totalAttendees,
+      totalVouchers,
+      claimedVouchers,
+      totalDrinksClaimed,
+    };
+  }, [events, attendees, vouchers]);
 
-  const recentAttendees = attendees
-    .sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime())
-    .slice(0, 5);
+  const upcomingEvents = useMemo(() => {
+    return events
+      .filter(e => new Date(e.date) > new Date())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(0, 5); // Limit to 5 for performance
+  }, [events]);
 
-  const stats = [
+  const recentAttendees = useMemo(() => {
+    return attendees
+      .sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime())
+      .slice(0, 10); // Limit to 10 for performance
+  }, [attendees]);
+
+  // Performance alerts for large datasets
+  const performanceAlerts = useMemo(() => {
+    const alerts = [];
+    
+    if (attendees.length > 1000) {
+      alerts.push({
+        type: 'info',
+        message: `Managing ${attendees.length.toLocaleString()} attendees - pagination is active for optimal performance`,
+      });
+    }
+    
+    if (vouchers.length > 1000) {
+      alerts.push({
+        type: 'info',
+        message: `Tracking ${vouchers.length.toLocaleString()} vouchers - using optimized display`,
+      });
+    }
+
+    if (attendees.length > 5000) {
+      alerts.push({
+        type: 'warning',
+        message: 'Large dataset detected - consider archiving old events for better performance',
+      });
+    }
+
+    return alerts;
+  }, [attendees.length, vouchers.length]);
+
+  const dashboardStats = [
     {
       name: 'Total Events',
-      value: totalEvents,
+      value: stats.totalEvents.toLocaleString(),
       icon: Calendar,
       color: 'blue',
       bgColor: 'bg-blue-50',
@@ -38,7 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
     },
     {
       name: 'Total Attendees',
-      value: totalAttendees,
+      value: stats.totalAttendees.toLocaleString(),
       icon: Users,
       color: 'purple',
       bgColor: 'bg-purple-50',
@@ -46,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
     },
     {
       name: 'Active Vouchers',
-      value: totalVouchers,
+      value: stats.totalVouchers.toLocaleString(),
       icon: TicketIcon,
       color: 'green',
       bgColor: 'bg-green-50',
@@ -54,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
     },
     {
       name: 'Drinks Claimed',
-      value: totalDrinksClaimed,
+      value: stats.totalDrinksClaimed.toLocaleString(),
       icon: TrendingUp,
       color: 'orange',
       bgColor: 'bg-orange-50',
@@ -69,9 +112,30 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         <p className="text-gray-600">Welcome to your party management dashboard</p>
       </div>
 
+      {/* Performance Alerts */}
+      {performanceAlerts.length > 0 && (
+        <div className="space-y-3">
+          {performanceAlerts.map((alert, index) => (
+            <div 
+              key={index}
+              className={`p-4 rounded-lg border ${
+                alert.type === 'warning' 
+                  ? 'bg-yellow-50 border-yellow-200 text-yellow-800' 
+                  : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}
+            >
+              <div className="flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
+                <span className="text-sm">{alert.message}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
+        {dashboardStats.map((stat) => {
           const Icon = stat.icon;
           return (
             <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -93,29 +157,48 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         {/* Upcoming Events */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 text-blue-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 text-blue-600 mr-2" />
+                <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+              </div>
+              {upcomingEvents.length > 5 && (
+                <span className="text-sm text-gray-500">Showing 5 of {upcomingEvents.length}</span>
+              )}
             </div>
           </div>
           <div className="p-6">
             {upcomingEvents.length > 0 ? (
               <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{event.name}</h3>
-                      <p className="text-sm text-gray-600">{event.location}</p>
-                      <p className="text-sm text-blue-600">{new Date(event.date).toLocaleDateString()}</p>
+                {upcomingEvents.map((event) => {
+                  const eventAttendees = attendees.filter(a => a.eventId === event.id);
+                  const capacityPercentage = (eventAttendees.length / event.maxAttendees) * 100;
+                  
+                  return (
+                    <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 truncate">{event.name}</h3>
+                        <p className="text-sm text-gray-600 truncate">{event.location}</p>
+                        <p className="text-sm text-blue-600">{new Date(event.date).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="text-sm font-medium text-gray-900">
+                          {eventAttendees.length.toLocaleString()} / {event.maxAttendees.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-400">Attendees</p>
+                        <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
+                          <div 
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              capacityPercentage > 90 ? 'bg-red-500' : 
+                              capacityPercentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(capacityPercentage, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">
-                        {attendees.filter(a => a.eventId === event.id).length} / {event.maxAttendees}
-                      </p>
-                      <p className="text-xs text-gray-400">Attendees</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-8">No upcoming events scheduled</p>
@@ -126,9 +209,14 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         {/* Recent Attendees */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Recent Registrations</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                <h2 className="text-lg font-semibold text-gray-900">Recent Registrations</h2>
+              </div>
+              {recentAttendees.length >= 10 && (
+                <span className="text-sm text-gray-500">Latest 10</span>
+              )}
             </div>
           </div>
           <div className="p-6">
@@ -138,12 +226,12 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
                   const event = events.find(e => e.id === attendee.eventId);
                   return (
                     <div key={attendee.id} className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{attendee.name}</h3>
-                        <p className="text-sm text-gray-600">{attendee.email}</p>
-                        <p className="text-sm text-blue-600">{event?.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 truncate">{attendee.name}</h3>
+                        <p className="text-sm text-gray-600 truncate">{attendee.email}</p>
+                        <p className="text-sm text-blue-600 truncate">{event?.name}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right ml-4">
                         <p className="text-sm text-gray-500">
                           {new Date(attendee.registeredAt).toLocaleDateString()}
                         </p>
@@ -168,28 +256,30 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{totalVouchers}</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.totalVouchers.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Total Vouchers</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{claimedVouchers}</div>
+              <div className="text-3xl font-bold text-green-600">{stats.claimedVouchers.toLocaleString()}</div>
               <div className="text-sm text-gray-600">Fully Claimed</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">{totalVouchers - claimedVouchers}</div>
+              <div className="text-3xl font-bold text-orange-600">
+                {(stats.totalVouchers - stats.claimedVouchers).toLocaleString()}
+              </div>
               <div className="text-sm text-gray-600">Partially Used</div>
             </div>
           </div>
-          {totalVouchers > 0 && (
+          {stats.totalVouchers > 0 && (
             <div className="mt-6">
-              <div className="bg-gray-200 rounded-full h-2">
+              <div className="bg-gray-200 rounded-full h-3">
                 <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(claimedVouchers / totalVouchers) * 100}%` }}
+                  className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${(stats.claimedVouchers / stats.totalVouchers) * 100}%` }}
                 ></div>
               </div>
               <p className="text-sm text-gray-600 mt-2 text-center">
-                {Math.round((claimedVouchers / totalVouchers) * 100)}% of vouchers fully utilized
+                {Math.round((stats.claimedVouchers / stats.totalVouchers) * 100)}% of vouchers fully utilized
               </p>
             </div>
           )}

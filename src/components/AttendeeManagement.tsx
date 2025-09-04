@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { UserPlus, Search, Mail, Phone, Building, Calendar, TicketIcon, Filter } from 'lucide-react';
 import { Event, Attendee, Voucher } from '../types';
+import { usePagination } from '../hooks/usePagination';
+import { useSearch } from '../hooks/useSearch';
+import Pagination from './Pagination';
 
 interface AttendeeManagementProps {
   events: Event[];
@@ -16,8 +19,8 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   onRegisterAttendee,
 }) => {
   const [showForm, setShowForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvent, setSelectedEvent] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [formData, setFormData] = useState({
     eventId: '',
     name: '',
@@ -25,6 +28,37 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
     phone: '',
     department: '',
   });
+
+  // Search functionality
+  const { searchTerm, setSearchTerm, filteredData: searchedAttendees } = useSearch(
+    attendees,
+    ['name', 'email', 'department']
+  );
+
+  // Additional filtering
+  const filteredAttendees = useMemo(() => {
+    let filtered = searchedAttendees;
+
+    if (selectedEvent) {
+      filtered = filtered.filter(attendee => attendee.eventId === selectedEvent);
+    }
+
+    if (selectedDepartment) {
+      filtered = filtered.filter(attendee => attendee.department === selectedDepartment);
+    }
+
+    return filtered.sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime());
+  }, [searchedAttendees, selectedEvent, selectedDepartment]);
+
+  // Pagination
+  const pagination = usePagination(50);
+  const { paginatedData: paginatedAttendees, pagination: paginationInfo } = pagination.paginateData(filteredAttendees);
+
+  // Get unique departments for filter
+  const departments = useMemo(() => {
+    const depts = [...new Set(attendees.map(a => a.department).filter(Boolean))];
+    return depts.sort();
+  }, [attendees]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,13 +73,6 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
     setShowForm(false);
   };
 
-  const filteredAttendees = attendees.filter(attendee => {
-    const matchesSearch = attendee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          attendee.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEvent = selectedEvent === '' || attendee.eventId === selectedEvent;
-    return matchesSearch && matchesEvent;
-  });
-
   const getEventName = (eventId: string) => {
     return events.find(e => e.id === eventId)?.name || 'Unknown Event';
   };
@@ -53,6 +80,11 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const getAttendeeVoucher = (attendeeId: string) => {
     return vouchers.find(v => v.attendeeId === attendeeId);
   };
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    pagination.resetPage();
+  }, [searchTerm, selectedEvent, selectedDepartment]);
 
   return (
     <div className="space-y-6">
@@ -180,7 +212,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
 
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Search Attendees</label>
             <div className="relative">
@@ -190,7 +222,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search by name or email..."
+                placeholder="Search by name, email, or department..."
               />
             </div>
           </div>
@@ -209,23 +241,63 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Department</label>
+            <select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+        
+        {(searchTerm || selectedEvent || selectedDepartment) && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing {filteredAttendees.length} of {attendees.length} attendees
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedEvent('');
+                setSelectedDepartment('');
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Attendees List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Registered Attendees ({filteredAttendees.length})
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Registered Attendees
+            </h2>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <Filter className="h-4 w-4" />
+              <span>Page {paginationInfo.page} of {pagination.totalPages(paginationInfo.total)}</span>
+            </div>
+          </div>
         </div>
+        
         <div className="divide-y divide-gray-200">
-          {filteredAttendees.length > 0 ? (
-            filteredAttendees.map((attendee) => {
+          {paginatedAttendees.length > 0 ? (
+            paginatedAttendees.map((attendee) => {
               const voucher = getAttendeeVoucher(attendee.id);
               return (
                 <div key={attendee.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <h3 className="text-lg font-medium text-gray-900">{attendee.name}</h3>
@@ -236,18 +308,18 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                         <div className="flex items-center">
-                          <Mail className="h-4 w-4 mr-2" />
-                          <span>{attendee.email}</span>
+                          <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">{attendee.email}</span>
                         </div>
                         {attendee.phone && (
                           <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-2" />
+                            <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>{attendee.phone}</span>
                           </div>
                         )}
                         {attendee.department && (
                           <div className="flex items-center">
-                            <Building className="h-4 w-4 mr-2" />
+                            <Building className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>{attendee.department}</span>
                           </div>
                         )}
@@ -259,27 +331,27 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       </div>
                     </div>
 
-                    <div className="mt-4 md:mt-0 md:ml-6 text-right">
+                    <div className="mt-4 lg:mt-0 lg:ml-6">
                       {voucher && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 min-w-[200px]">
                           <div className="flex items-center justify-center mb-2">
                             <TicketIcon className="h-4 w-4 text-green-600 mr-1" />
                             <span className="text-sm font-medium text-green-800">Voucher Issued</span>
                           </div>
                           <div className="text-sm text-green-700">
-                            <p className="font-mono">{voucher.voucherNumber}</p>
-                            <div className="mt-1 space-y-1">
+                            <p className="font-mono text-center mb-2">{voucher.voucherNumber}</p>
+                            <div className="space-y-1">
                               <div className="flex justify-between">
                                 <span>Soft Drinks:</span>
-                                <span>{voucher.softDrinks.claimed}/{voucher.softDrinks.total}</span>
+                                <span className="font-medium">{voucher.softDrinks.claimed}/{voucher.softDrinks.total}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Hard Drinks:</span>
-                                <span>{voucher.hardDrinks.claimed}/{voucher.hardDrinks.total}</span>
+                                <span className="font-medium">{voucher.hardDrinks.claimed}/{voucher.hardDrinks.total}</span>
                               </div>
                             </div>
                             {voucher.isFullyClaimed && (
-                              <div className="mt-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              <div className="mt-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded text-center">
                                 Fully Used
                               </div>
                             )}
@@ -296,7 +368,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
               <UserPlus className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No attendees found</h3>
               <p className="text-gray-600">
-                {searchTerm || selectedEvent
+                {searchTerm || selectedEvent || selectedDepartment
                   ? "No attendees match your search criteria"
                   : "No attendees have been registered yet"
                 }
@@ -304,6 +376,21 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {filteredAttendees.length > 0 && (
+          <Pagination
+            currentPage={paginationInfo.page}
+            totalPages={pagination.totalPages(paginationInfo.total)}
+            pageSize={paginationInfo.pageSize}
+            totalItems={paginationInfo.total}
+            onPageChange={pagination.goToPage}
+            onPageSizeChange={(newPageSize) => {
+              pagination.setPageSize(newPageSize);
+              pagination.resetPage();
+            }}
+          />
+        )}
       </div>
     </div>
   );
