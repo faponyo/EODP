@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, MapPin, Users, Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import { Event, Attendee } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import EventTimer from './EventTimer';
 
 interface EventManagementProps {
   events: Event[];
@@ -356,6 +357,11 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{new Date(event.date).toLocaleDateString()}</span>
                   </div>
+                  {isUpcoming && (
+                    <div className="mt-3">
+                      <EventTimer eventDate={event.date} eventName={event.name} compact />
+                    </div>
+                  )}
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span className="truncate">{event.location}</span>

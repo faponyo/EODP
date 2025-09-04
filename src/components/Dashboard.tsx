@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Calendar, Users, TicketIcon, TrendingUp, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Event, Attendee, Voucher } from '../types';
+import EventTimer from './EventTimer';
 
 interface DashboardProps {
   events: Event[];
@@ -183,7 +184,9 @@ const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) =>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">{event.name}</h3>
                         <p className="text-sm text-gray-600 truncate">{event.location}</p>
-                        <p className="text-sm text-coop-600">{new Date(event.date).toLocaleDateString()}</p>
+                        <div className="mt-2">
+                          <EventTimer eventDate={event.date} eventName={event.name} compact />
+                        </div>
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-sm font-medium text-gray-900">
