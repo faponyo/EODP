@@ -132,7 +132,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   // Reset pagination when filters change
   React.useEffect(() => {
     pagination.resetPage();
-  }, [searchTerm, selectedEvent, selectedDepartment]);
+  }, [filteredAttendees.length]);
 
   return (
     <div className="space-y-6">
@@ -352,6 +352,9 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                           {getEventName(attendee.eventId)}
                         </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(attendee.status)}`}>
+                          {attendee.status.charAt(0).toUpperCase() + attendee.status.slice(1)}
+                        </span>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
@@ -376,15 +379,45 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       <div className="flex items-center mt-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span>Registered: {new Date(attendee.registeredAt).toLocaleDateString()}</span>
+                        {attendee.reviewedAt && (
+                          <span className="ml-4">
+                            • Reviewed: {new Date(attendee.reviewedAt).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
+                      
+                      {attendee.status === 'rejected' && attendee.rejectionReason && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800">
+                            <strong>Rejection Reason:</strong> {attendee.rejectionReason}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 lg:mt-0 lg:ml-6">
-                      {voucher && (
+                      {attendee.status === 'pending' && user?.role === 'admin' && (
+                        <div className="flex space-x-2 mb-4">
+                          <button
+                            onClick={() => handleApprove(attendee.id)}
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(attendee.id)}
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                      
+                      {voucher && attendee.status === 'approved' && (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 min-w-[200px]">
                           <div className="flex items-center justify-center mb-2">
                             <TicketIcon className="h-4 w-4 text-green-600 mr-1" />
-                            <span className="text-sm font-medium text-green-800">Voucher Active</span>
+                            <span className="text-sm font-medium text-green-800">Voucher Issued</span>
                           </div>
                           <div className="text-sm text-green-700">
                             <p className="font-mono text-center mb-2">{voucher.voucherNumber}</p>
@@ -404,6 +437,19 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                               </div>
                             )}
                           </div>
+                        </div>
+                      )}
+                      
+                      {attendee.status === 'pending' && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-yellow-800 mb-1">Awaiting Approval</div>
+                          <div className="text-xs text-yellow-700">Voucher will be issued after approval</div>
+                        </div>
+                      )}
+                      
+                      {attendee.status === 'rejected' && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-red-800">Registration Rejected</div>
                         </div>
                       )}
                     </div>
