@@ -3,17 +3,15 @@ import { Eye, EyeOff, Lock, User, Shield, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const AuthForm: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,12 +19,7 @@ const AuthForm: React.FC = () => {
     setError('');
 
     try {
-      let result;
-      if (isLogin) {
-        result = await login(formData.email, formData.password);
-      } else {
-        result = await register(formData.email, formData.password, formData.name);
-      }
+      const result = await login(formData.email, formData.password);
 
       if (!result.success) {
         setError(result.error || 'Authentication failed');
@@ -79,37 +72,16 @@ const AuthForm: React.FC = () => {
                 <User className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">
-                {isLogin ? 'Welcome Back' : 'Create Account'}
+                Welcome Back
               </h2>
               <p className="text-coop-100">
-                {isLogin ? 'Sign in to access your account' : 'Register for system access'}
+                Sign in to access your account
               </p>
             </div>
 
             {/* Form Content */}
             <div className="px-8 py-8">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {!isLogin && (
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Full Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        required={!isLogin}
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-                        placeholder="Enter your full name"
-                      />
-                    </div>
-                  </div>
-                )}
-
                 <div>
                   <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                     Email Address
@@ -175,24 +147,10 @@ const AuthForm: React.FC = () => {
                       Processing...
                     </div>
                   ) : (
-                    isLogin ? 'Sign In' : 'Create Account'
+                    'Sign In'
                   )}
                 </button>
               </form>
-
-              {/* Toggle Form Type */}
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setError('');
-                    setFormData({ email: '', password: '', name: '' });
-                  }}
-                  className="text-coop-600 hover:text-coop-700 font-semibold transition-colors text-sm"
-                >
-                  {isLogin ? "Don't have an account? Create one" : "Already have an account? Sign in"}
-                </button>
-              </div>
 
               {/* Security Notice */}
               <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
