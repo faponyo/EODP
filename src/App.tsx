@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee } from './types';
 import { createVoucher } from './utils/voucher';
@@ -15,32 +15,10 @@ import SubsidiaryManagement from './components/SubsidiaryManagement';
 import NoAccessPage from './components/NoAccessPage';
 import EventSelector from './components/EventSelector';
 
-// Protected Route Component
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: 'admin' | 'internal' | 'external';
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+function App() {
   const { isAuthenticated, user } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/no-access" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-// Main App Content Component
-const AppContent: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [selectedEventId, setSelectedEventId] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState('dashboard');
   
   // State management
   const [events, setEvents] = useState<Event[]>([]);
@@ -49,22 +27,8 @@ const AppContent: React.FC = () => {
   const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
   const [subsidiaryEmployees, setSubsidiaryEmployees] = useState<SubsidiaryEmployee[]>([]);
 
-  // Get current page from URL
-  const getCurrentPage = () => {
-    const path = location.pathname;
-    if (path === '/' || path === '/dashboard') return 'dashboard';
-    if (path === '/events') return 'events';
-    if (path === '/attendees') return 'attendees';
-    if (path === '/vouchers') return 'vouchers';
-    if (path === '/reports') return 'reports';
-    if (path === '/users') return 'users';
-    if (path === '/subsidiaries') return 'subsidiaries';
-    if (path === '/no-access') return 'no-access';
-    return 'dashboard';
-  };
-
   const handlePageChange = (page: string) => {
-    navigate(`/${page === 'dashboard' ? '' : page}`);
+    setCurrentPage(page);
   };
 
   // Load data from localStorage on mount
@@ -724,121 +688,94 @@ const AppContent: React.FC = () => {
 
   const { events: displayEvents, attendees: displayAttendees, vouchers: displayVouchers } = getEventFilteredData();
 
-  return (
-    <Routes>
-      <Route path="/login" element={<AuthForm />} />
-      <Route path="/no-access" element={
-        <Layout currentPage="no-access" onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-          <NoAccessPage />
-        </Layout>
-      } />
-      
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/events" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <EventManagement
-              events={displayEvents}
-              attendees={displayAttendees}
-              onCreateEvent={handleCreateEvent}
-              onUpdateEvent={handleUpdateEvent}
-              onDeleteEvent={handleDeleteEvent}
-              userRole={user?.role || 'internal'}
-            />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/attendees" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <AttendeeManagement
-              events={displayEvents}
-              attendees={displayAttendees}
-              vouchers={displayVouchers}
-              onRegisterAttendee={handleRegisterAttendee}
-              onApproveRegistration={handleApproveRegistration}
-              onRejectRegistration={handleRejectRegistration}
-              userRole={user?.role || 'internal'}
-            />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/vouchers" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <VoucherManagement
-              events={displayEvents}
-              attendees={displayAttendees}
-              vouchers={displayVouchers}
-              onClaimDrink={handleClaimDrink}
-              userRole={user?.role || 'internal'}
-            />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/reports" element={
-        <ProtectedRoute>
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/users" element={
-        <ProtectedRoute requiredRole="admin">
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <UserManagement
-              events={events}
-              onCreateUser={handleCreateUser}
-              onUpdateUserStatus={handleUpdateUserStatus}
-              onUpdateUser={handleUpdateUser}
-            />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/subsidiaries" element={
-        <ProtectedRoute requiredRole="admin">
-          <Layout currentPage={getCurrentPage()} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-            <SubsidiaryManagement
-              onCreateSubsidiary={handleCreateSubsidiary}
-              onUpdateSubsidiary={handleUpdateSubsidiary}
-              onDeleteSubsidiary={handleDeleteSubsidiary}
-              onUploadEmployees={handleUploadEmployees}
-            />
-          </Layout>
-        </ProtectedRoute>
-      } />
-      
-      {/* Catch all route - redirect to dashboard */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
+  if (!isAuthenticated) {
+    return <AuthForm />;
+  }
 
-function App() {
+  // Show no access page if user has no rights
+  if (!hasAnyAccess()) {
+    return (
+      <Layout currentPage="no-access" onPageChange={() => {}} events={[]} selectedEvent={null}>
+        <NoAccessPage />
+      </Layout>
+    );
+  }
+
+  // Show event selection for external users
+  if (needsEventSelection()) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+      />
+    );
+  }
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'events':
+        return (
+          <EventManagement
+            events={displayEvents}
+            attendees={displayAttendees}
+            onCreateEvent={handleCreateEvent}
+            onUpdateEvent={handleUpdateEvent}
+            onDeleteEvent={handleDeleteEvent}
+          />
+        );
+      case 'attendees':
+        return (
+          <AttendeeManagement
+            events={displayEvents}
+            attendees={displayAttendees}
+            vouchers={displayVouchers}
+            onRegisterAttendee={handleRegisterAttendee}
+            onApproveRegistration={handleApproveRegistration}
+            onRejectRegistration={handleRejectRegistration}
+            userRole={user?.role || 'internal'}
+          />
+        );
+      case 'vouchers':
+        return (
+          <VoucherManagement
+            events={displayEvents}
+            attendees={displayAttendees}
+            vouchers={displayVouchers}
+            onClaimDrink={handleClaimDrink}
+            userRole={user?.role || 'internal'}
+          />
+        );
+      case 'reports':
+        return <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
+      case 'users':
+        if (user?.role !== 'admin') return <NoAccessPage />;
+        return (
+          <UserManagement
+            events={events}
+            onCreateUser={handleCreateUser}
+            onUpdateUserStatus={handleUpdateUserStatus}
+            onUpdateUser={handleUpdateUser}
+          />
+        );
+      case 'subsidiaries':
+        if (user?.role !== 'admin') return <NoAccessPage />;
+        return (
+          <SubsidiaryManagement
+            onCreateSubsidiary={handleCreateSubsidiary}
+            onUpdateSubsidiary={handleUpdateSubsidiary}
+            onDeleteSubsidiary={handleDeleteSubsidiary}
+            onUploadEmployees={handleUploadEmployees}
+          />
+        );
+      default:
+        return <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
+    }
+  };
+
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <Layout currentPage={currentPage} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
+      {renderCurrentPage()}
+    </Layout>
   );
 }
 
