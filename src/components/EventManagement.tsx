@@ -156,7 +156,10 @@ const EventManagement: React.FC<EventManagementProps> = ({
                     <div className="flex justify-between items-center mb-2">
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {eventAttendees.filter(a => a.status === 'approved').length.toLocaleString()} / {selectedEvent.maxAttendees.toLocaleString()}
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            (eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100 > 90 ? 'bg-coop-red-500' : 
+                            (eventAttendees.filter(a => a.status === 'approved').length / event.maxAttendees) * 100 > 70 ? 'bg-coop-yellow-500' : 'bg-coop-500'
+                          }`}
                         </p>
                         <p className="text-xs text-gray-400">Approved</p>
                       </div>
@@ -180,9 +183,9 @@ const EventManagement: React.FC<EventManagementProps> = ({
                         </div>
                         <div>
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            attendee.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            attendee.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                            attendee.status === 'approved' ? 'bg-coop-100 text-coop-800' :
+                            attendee.status === 'pending' ? 'bg-coop-yellow-100 text-coop-yellow-800' :
+                            'bg-coop-red-100 text-coop-red-800'
                           }`}>
                             {attendee.status}
                           </span>
@@ -364,15 +367,15 @@ const EventManagement: React.FC<EventManagementProps> = ({
                   )}
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span className="truncate">{event.location}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
+                    <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
+                      <div className="text-sm font-medium text-coop-yellow-800 mb-1">Awaiting Approval</div>
+                      <div className="text-xs text-coop-yellow-700">Voucher will be issued after approval</div>
                     <Users className="h-4 w-4 mr-2 flex-shrink-0" />
                     <span>{eventAttendees.filter(a => a.status === 'approved').length} / {event.maxAttendees} approved</span>
                   </div>
                   {eventAttendees.filter(a => a.status === 'pending').length > 0 && (
-                    <div className="flex items-center text-sm text-yellow-600">
-                      <span>{eventAttendees.filter(a => a.status === 'pending').length} pending approval</span>
+                    <div className="bg-coop-red-50 border border-coop-red-200 rounded-lg p-3 min-w-[200px] text-center">
+                      <div className="text-sm font-medium text-coop-red-800">Registration Rejected</div>
                     </div>
                   )}
                 </div>

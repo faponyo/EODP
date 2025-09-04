@@ -226,11 +226,11 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-coop-yellow-100 text-coop-yellow-800';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-coop-100 text-coop-800';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'bg-coop-red-100 text-coop-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -550,7 +550,7 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                 <button
                   onClick={handleRejectSubmit}
                   disabled={!rejectionReason.trim()}
-                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="flex-1 bg-coop-red-600 text-white px-4 py-2 rounded-lg hover:bg-coop-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Reject Registration
                 </button>
@@ -625,8 +625,8 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       </div>
                       
                       {attendee.status === 'rejected' && attendee.rejectionReason && (
-                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm text-red-800">
+                        <div className="mt-2 p-3 bg-coop-red-50 border border-coop-red-200 rounded-lg">
+                          <p className="text-sm text-coop-red-800">
                             <strong>Rejection Reason:</strong> {attendee.rejectionReason}
                           </p>
                         </div>
@@ -638,13 +638,13 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                         <div className="flex space-x-2 mb-4">
                           <button
                             onClick={() => handleApprove(attendee.id)}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+                            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors text-sm"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleReject(attendee.id)}
-                            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                            className="bg-coop-red-600 text-white px-4 py-2 rounded-lg hover:bg-coop-red-700 transition-colors text-sm"
                           >
                             Reject
                           </button>
@@ -679,15 +679,15 @@ const AttendeeManagement: React.FC<AttendeeManagementProps> = ({
                       )}
                       
                       {attendee.status === 'pending' && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
-                          <div className="text-sm font-medium text-yellow-800 mb-1">Awaiting Approval</div>
-                          <div className="text-xs text-yellow-700">Voucher will be issued after approval</div>
+                        <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-coop-yellow-800 mb-1">Awaiting Approval</div>
+                          <div className="text-xs text-coop-yellow-700">Voucher will be issued after approval</div>
                         </div>
                       )}
                       
                       {attendee.status === 'rejected' && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 min-w-[200px] text-center">
-                          <div className="text-sm font-medium text-red-800">Registration Rejected</div>
+                        <div className="bg-coop-red-50 border border-coop-red-200 rounded-lg p-3 min-w-[200px] text-center">
+                          <div className="text-sm font-medium text-coop-red-800">Registration Rejected</div>
                         </div>
                       )}
                     </div>

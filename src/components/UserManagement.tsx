@@ -129,11 +129,11 @@ const UserManagement: React.FC<UserManagementProps> = ({
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-coop-red-100 text-coop-red-800';
       case 'internal':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-coop-blue-100 text-coop-blue-800';
       case 'external':
-        return 'bg-green-100 text-green-800';
+        return 'bg-coop-100 text-coop-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -141,8 +141,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const getStatusBadgeColor = (status: string) => {
     return status === 'active' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-red-100 text-red-800';
+      ? 'bg-coop-100 text-coop-800' 
+      : 'bg-coop-red-100 text-coop-red-800';
   };
 
   // Reset pagination when filters change
@@ -454,8 +454,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
                       onClick={() => handleToggleStatus(user.id, user.status)}
                       className={`px-3 py-2 rounded-lg transition-colors flex items-center space-x-1 text-sm ${
                         user.status === 'active'
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          ? 'bg-coop-red-100 text-coop-red-700 hover:bg-coop-red-200'
+                          : 'bg-coop-100 text-coop-700 hover:bg-coop-200'
                       }`}
                     >
                       {user.status === 'active' ? (

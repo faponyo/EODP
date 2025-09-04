@@ -23,10 +23,10 @@ const NoAccessPage: React.FC = () => {
           </p>
 
           {/* Status Alert */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="bg-coop-yellow-50 border border-coop-yellow-200 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
-              <span className="text-sm font-medium text-yellow-800">
+              <AlertTriangle className="h-5 w-5 text-coop-yellow-600 mr-2" />
+              <span className="text-sm font-medium text-coop-yellow-800">
                 Account Pending Configuration
               </span>
             </div>

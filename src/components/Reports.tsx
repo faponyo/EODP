@@ -254,13 +254,13 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Voucher Utilization</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">
+                <div className="text-4xl font-bold text-coop-blue-600 mb-2">
                   {stats.totalVouchers > 0 ? Math.round((stats.totalSoftDrinksClaimed / (stats.totalVouchers * 2)) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-600">Soft Drinks Used</div>
                 <div className="mt-2 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-coop-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-coop-blue-500 h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${stats.totalVouchers > 0 ? (stats.totalSoftDrinksClaimed / (stats.totalVouchers * 2)) * 100 : 0}%` 
                     }}
@@ -284,7 +284,7 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
               </div>
 
               <div className="text-center">
-                <div className="text-4xl font-bold text-coop-700 mb-2">
+                <div className="text-4xl font-bold text-coop-600 mb-2">
                   {stats.maxPossibleDrinks > 0 ? Math.round((stats.totalDrinksClaimed / stats.maxPossibleDrinks) * 100) : 0}%
                 </div>
                 <div className="text-sm text-gray-600">Overall Utilization</div>
@@ -303,201 +303,4 @@ const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
       )}
 
       {/* Department Analysis with Pagination */}
-      {selectedReport === 'departments' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Department Analysis</h3>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Filter className="h-4 w-4" />
-                <span>Page {deptPaginationInfo.page} of {pagination.totalPages(deptPaginationInfo.total)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Attendees
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vouchers
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Drinks Claimed
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Avg per Person
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Utilization
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedDepartments.map(([dept, data]) => {
-                  const utilizationRate = data.vouchers > 0 ? (data.drinks / (data.vouchers * 4)) * 100 : 0;
-                  return (
-                    <tr key={dept} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {dept}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.count.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.vouchers.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.drinks.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.count > 0 ? (data.drinks / data.count).toFixed(1) : '0.0'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-coop-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${utilizationRate}%` }}
-                            ></div>
-                          </div>
-                          <span>{utilizationRate.toFixed(1)}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {departmentEntries.length > pagination.pageSize && (
-            <Pagination
-              currentPage={deptPaginationInfo.page}
-              totalPages={pagination.totalPages(deptPaginationInfo.total)}
-              pageSize={deptPaginationInfo.pageSize}
-              totalItems={deptPaginationInfo.total}
-              onPageChange={pagination.goToPage}
-              onPageSizeChange={(newPageSize) => {
-                pagination.setPageSize(newPageSize);
-                pagination.resetPage();
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Event Breakdown Report */}
-      {selectedReport === 'events' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Event Performance Analysis</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-6">
-              {eventBreakdown.map((eventData) => (
-                <div key={eventData.event.id} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900">{eventData.event.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {new Date(eventData.event.date).toLocaleDateString()} • {eventData.event.location}
-                      </p>
-                    </div>
-                    <div className="mt-2 lg:mt-0 text-right">
-                      <div className="text-sm text-gray-600">Utilization Rate</div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {eventData.utilizationRate.toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-blue-600">{eventData.attendeeCount.toLocaleString()}</div>
-                      <div className="text-sm text-blue-800">Attendees</div>
-                      <div className="text-xs text-blue-600">
-                        {eventData.attendeeCount.toLocaleString()} / {eventData.event.maxAttendees.toLocaleString()} capacity
-                      </div>
-                    </div>
-                    
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-green-600">{eventData.voucherCount.toLocaleString()}</div>
-                      <div className="text-sm text-green-800">Vouchers Issued</div>
-                      <div className="text-xs text-green-600">
-                        {(eventData.voucherCount * 4).toLocaleString()} total drinks available
-                      </div>
-                    </div>
-                    
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-orange-600">{eventData.claimedDrinks.toLocaleString()}</div>
-                      <div className="text-sm text-orange-800">Drinks Claimed</div>
-                      <div className="text-xs text-orange-600">
-                        {eventData.voucherCount > 0 ? (eventData.claimedDrinks / eventData.voucherCount).toFixed(1) : '0'} per person
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <div className="bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-blue-500 h-3 rounded-full transition-all duration-300"
-                        style={{ width: `${eventData.utilizationRate}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Export Data</h3>
-          <div className="text-sm text-gray-600">
-            {selectedEvent === 'all' ? 'All events' : events.find(e => e.id === selectedEvent)?.name}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={exportAttendeeList}
-            disabled={filteredAttendees.length === 0}
-            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export Attendees ({filteredAttendees.length.toLocaleString()})</span>
-          </button>
-          
-          <button
-            onClick={exportVoucherUsage}
-            disabled={filteredVouchers.length === 0}
-            className="bg-coop-700 text-white px-4 py-2 rounded-lg hover:bg-coop-800 transition-colors flex items-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export Vouchers ({filteredVouchers.length.toLocaleString()})</span>
-          </button>
-        </div>
-        
-        <div className="mt-4 p-4 bg-coop-50 rounded-lg">
-          <h4 className="font-medium text-coop-900 mb-2">Performance Optimizations:</h4>
-          <ul className="text-sm text-coop-800 space-y-1">
-            <li>• Pagination limits display to manageable chunks (25-200 items per page)</li>
-            <li>• Search and filtering use optimized algorithms for large datasets</li>
-            <li>• Data exports handle thousands of records efficiently</li>
-            <li>• Memory usage is optimized to prevent browser slowdowns</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Reports;
+      {selectedReport === 'departments' &&
