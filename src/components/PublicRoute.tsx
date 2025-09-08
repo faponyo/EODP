@@ -26,3 +26,5 @@ const PublicRoute: React.FC<PublicRouteProps> = ({
   // User is not authenticated, show public content
   return <>{children}</>;
 };
+
+export default PublicRoute
