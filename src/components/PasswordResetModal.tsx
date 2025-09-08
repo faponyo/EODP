@@ -4,9 +4,10 @@ import { Lock, Eye, EyeOff, Shield, AlertCircle, CheckCircle } from 'lucide-reac
 interface PasswordResetModalProps {
   onPasswordReset: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   userEmail: string;
+  onBackToLogin: () => void;
 }
 
-const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ onPasswordReset, userEmail }) => {
+const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ onPasswordReset, userEmail, onBackToLogin }) => {
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -281,6 +282,14 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ onPasswordReset
               </div>
             )}
 
+
+          <button
+            type="button"
+            onClick={onBackToLogin}
+            className="w-full mt-3 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 border border-gray-300"
+          >
+            Back to Login
+          </button>
             <button
               type="submit"
               disabled={isLoading || passwordStrength.score < 3 || formData.newPassword !== formData.confirmPassword}

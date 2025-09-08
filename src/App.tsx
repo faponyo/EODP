@@ -702,6 +702,7 @@ function App() {
       <PasswordResetModal
         onPasswordReset={resetPassword}
         userEmail={user.email}
+        onBackToLogin={logout}
       />
     );
   }
@@ -730,6 +731,7 @@ function App() {
       <EventSelector 
         events={filteredEvents} 
         onEventSelect={setSelectedEventId}
+        onBackToLogin={logout}
       />
     );
   }
