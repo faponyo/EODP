@@ -132,7 +132,8 @@ const EventSelector: React.FC<EventSelectorProps> = ({ events, onEventSelect, on
                 </div>
 
                 {events.length > 0 && (
-                  <div className="flex justify-end">
+                  <>
+                    <div className="flex justify-end">
                     <button
                       type="submit"
                       disabled={!selectedEventId}
@@ -140,17 +141,7 @@ const EventSelector: React.FC<EventSelectorProps> = ({ events, onEventSelect, on
                     >
                       Continue to Dashboard
                     </button>
-                  </div>
-                  
-                  <div className="text-center mt-4">
-                    <button
-                      type="button"
-                      onClick={onBackToLogin}
-                      className="text-sm text-gray-600 hover:text-gray-800 underline transition-colors"
-                    >
-                      Back to Login
-                    </button>
-                  </div>
+                  </>
                 )}
               </form>
             </div>
