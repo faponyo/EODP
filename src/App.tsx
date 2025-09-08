@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Users, TicketIcon, BarChart3, UserCog, Building, LogOut } from 'lucide-react';
+import { Calendar, Users, TicketIcon, BarChart3, UserCog, Building, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee, User } from './types';
 import { createVoucher } from './utils/voucher';
@@ -15,12 +15,12 @@ import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
 import SubsidiaryManagement from './components/SubsidiaryManagement';
 import EventSelector from './components/EventSelector';
-import Navbar from './components/Navbar';
 
 function App() {
   const { isAuthenticated, user, logout, requiresPasswordReset, resetPassword } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedEventId, setSelectedEventId] = useState<string>('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // State management
   const [events, setEvents] = useState<Event[]>([]);
@@ -655,6 +655,42 @@ function App() {
   };
 
   const { events: displayEvents, attendees: displayAttendees, vouchers: displayVouchers } = getEventFilteredData();
+
+  // Navigation items based on user role
+  const getNavigationItems = () => {
+    const baseItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+      { id: 'events', label: 'Events', icon: Calendar },
+      { id: 'attendees', label: 'Attendees', icon: Users },
+      { id: 'vouchers', label: 'Vouchers', icon: TicketIcon },
+      { id: 'reports', label: 'Reports', icon: BarChart3 },
+    ];
+
+    if (user?.role === 'admin') {
+      baseItems.push(
+        { id: 'subsidiaries', label: 'Subsidiaries', icon: Building },
+        { id: 'users', label: 'User Management', icon: UserCog }
+      );
+    }
+
+    return baseItems;
+  };
+
+  const navigationItems = getNavigationItems();
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-coop-red-100 text-coop-red-800';
+      case 'internal':
+        return 'bg-coop-blue-100 text-coop-blue-800';
+      case 'external':
+        return 'bg-coop-100 text-coop-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   // Show login form if not authenticated
   if (!isAuthenticated || !user) {
     return <AuthForm />;
@@ -778,17 +814,122 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <Calendar className="h-8 w-8 text-coop-600 mr-3" />
+                  <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
+                </div>
+                
+                {/* Selected Event Display for External Users */}
+                {user.role === 'external' && selectedEvent && (
+                  <div className="hidden sm:flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
+                    <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
+                    <div>
+                      <p className="text-sm font-medium text-coop-900 truncate max-w-48">
+                        {selectedEvent.name}
+                      </p>
+                      <p className="text-xs text-coop-700">
+                        {new Date(selectedEvent.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                aria-label="Toggle navigation menu"
+              >
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+              
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span className="hidden sm:inline">{user.name}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                  {user.role.toUpperCase()}
+                </span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Mobile Selected Event Display */}
+          {user.role === 'external' && selectedEvent && (
+            <div className="sm:hidden pb-4">
+              <div className="flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
+                <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
+                <div>
+                  <p className="text-sm font-medium text-coop-900">
+                    {selectedEvent.name}
+                  </p>
+                  <p className="text-xs text-coop-700">
+                    {new Date(selectedEvent.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Navbar */}
-          <Navbar
-            user={user}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-            onLogout={logout}
-            events={filteredEvents}
-            selectedEvent={selectedEvent}
-          />
+          {/* Navigation Sidebar */}
+          <nav className={`lg:w-64 flex-shrink-0 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
+            {/* Mobile overlay */}
+            {sidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+            
+            <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${
+              sidebarOpen ? 'fixed top-20 left-4 right-4 z-50 lg:relative lg:top-auto lg:left-auto lg:right-auto lg:z-auto' : ''
+            }`}>
+              <ul className="space-y-2">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentPage === item.id;
+                  
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => {
+                          setCurrentPage(item.id);
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                          isActive
+                            ? 'bg-coop-50 text-coop-700 border-l-4 border-coop-600'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <Icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </nav>
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
