@@ -141,6 +141,7 @@ const EventSelector: React.FC<EventSelectorProps> = ({ events, onEventSelect, on
                     >
                       Continue to Dashboard
                     </button>
+                    </div>
                   </>
                 )}
               </form>
