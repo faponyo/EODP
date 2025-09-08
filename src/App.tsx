@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee } from './types';
+import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee, User } from './types';
 import { createVoucher } from './utils/voucher';
+
+// Components
 import AuthForm from './components/AuthForm';
-import PasswordResetModal from './components/PasswordResetModal';
+import PasswordResetPage from './components/PasswordResetPage';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import EventManagement from './components/EventManagement';
@@ -14,12 +16,14 @@ import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
 import SubsidiaryManagement from './components/SubsidiaryManagement';
 import NoAccessPage from './components/NoAccessPage';
+import AccountDisabledPage from './components/AccountDisabledPage';
 import EventSelector from './components/EventSelector';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 
 function App() {
-  const { isAuthenticated, user, logout, requiresPasswordReset, resetPassword } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const [selectedEventId, setSelectedEventId] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState('dashboard');
   
   // State management
   const [events, setEvents] = useState<Event[]>([]);
@@ -27,10 +31,6 @@ function App() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
   const [subsidiaryEmployees, setSubsidiaryEmployees] = useState<SubsidiaryEmployee[]>([]);
-
-  const handlePageChange = (page: string) => {
-    setCurrentPage(page);
-  };
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -126,6 +126,8 @@ function App() {
           location: 'Grand Ballroom, Plaza Hotel',
           description: 'Join us for our annual Christmas celebration with dinner, drinks, and entertainment.',
           maxAttendees: 150,
+          status: 'active',
+          hasVouchers: false,
           createdAt: new Date().toISOString(),
           createdBy: '1',
         },
@@ -136,6 +138,8 @@ function App() {
           location: 'Rooftop Terrace, Company HQ',
           description: 'Ring in the new year with colleagues and friends at our rooftop party.',
           maxAttendees: 100,
+          status: 'active',
+          hasVouchers: false,
           createdAt: new Date().toISOString(),
           createdBy: '1',
         },
@@ -233,7 +237,7 @@ function App() {
           name: 'Co-op Insurance Company Ltd',
           code: 'COINS',
           description: 'Leading insurance provider offering comprehensive coverage solutions',
-          createdAt: new Date(Date.now() - 2592000000).toISOString(), // 30 days ago
+          createdAt: new Date(Date.now() - 2592000000).toISOString(),
           createdBy: '1',
         },
         {
@@ -241,7 +245,7 @@ function App() {
           name: 'Co-op Trust Investment Services',
           code: 'TRUST',
           description: 'Investment and wealth management services for corporate and individual clients',
-          createdAt: new Date(Date.now() - 1728000000).toISOString(), // 20 days ago
+          createdAt: new Date(Date.now() - 1728000000).toISOString(),
           createdBy: '1',
         },
         {
@@ -249,7 +253,7 @@ function App() {
           name: 'Co-op Development Finance',
           code: 'DEVFIN',
           description: 'Development finance and project funding solutions',
-          createdAt: new Date(Date.now() - 864000000).toISOString(), // 10 days ago
+          createdAt: new Date(Date.now() - 864000000).toISOString(),
           createdBy: '1',
         },
       ];
@@ -453,15 +457,48 @@ function App() {
       id: attendeeId,
       registeredAt: new Date().toISOString(),
       voucherId,
+      status: 'pending',
       submittedBy: user?.id || '1',
     };
 
     setAttendees([...attendees, newAttendee]);
+  };
 
-    // Create voucher immediately
-    const newVoucher = createVoucher(attendeeId, attendeeData.eventId);
-    newVoucher.id = voucherId;
-    setVouchers([...vouchers, newVoucher]);
+  const handleApproveRegistration = (attendeeId: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'approved' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+        };
+      }
+      return attendee;
+    }));
+
+    // Create voucher for approved attendee
+    const attendee = attendees.find(a => a.id === attendeeId);
+    if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
+      const newVoucher = createVoucher(attendeeId, attendee.eventId);
+      newVoucher.id = attendee.voucherId;
+      setVouchers([...vouchers, newVoucher]);
+    }
+  };
+
+  const handleRejectRegistration = (attendeeId: string, reason: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'rejected' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+          rejectionReason: reason,
+        };
+      }
+      return attendee;
+    }));
   };
 
   const handleCreateUser = (userData: Omit<User, 'id' | 'createdAt' | 'createdBy'>) => {
@@ -532,94 +569,6 @@ function App() {
     setSubsidiaryEmployees([...subsidiaryEmployees, ...newEmployees]);
   };
 
-  // Filter data based on user role and permissions
-  const getFilteredEvents = () => {
-    if (user?.role === 'external' && user.assignedEventIds) {
-      return events.filter(event => user.assignedEventIds!.includes(event.id));
-    }
-    return events;
-  };
-
-  const getFilteredAttendees = () => {
-    if (user?.role === 'external' && user.assignedEventIds) {
-      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
-    }
-    return attendees;
-  };
-
-  const getFilteredVouchers = () => {
-    if (user?.role === 'external' && user.assignedEventIds) {
-      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
-      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
-    }
-    return vouchers;
-  };
-
-  const filteredEvents = getFilteredEvents();
-  const filteredAttendees = getFilteredAttendees();
-  const filteredVouchers = getFilteredVouchers();
-  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
-
-  // Check if user has any access rights
-  const hasAnyAccess = () => {
-    if (!user) return false;
-    
-    // Admin and internal users always have access
-    if (user.role === 'admin' || user.role === 'internal') return true;
-    
-    // External users need assigned events
-    if (user.role === 'external') {
-      return user.assignedEventIds && user.assignedEventIds.length > 0;
-    }
-    
-    return false;
-  };
-
-  // Check if external user needs to select an event
-  const needsEventSelection = () => {
-    return user?.role === 'external' && 
-           user.assignedEventIds && 
-           user.assignedEventIds.length > 0 && 
-           !selectedEventId;
-  };
-
-  const handleApproveRegistration = (attendeeId: string) => {
-    setAttendees(attendees.map(attendee => {
-      if (attendee.id === attendeeId) {
-        return {
-          ...attendee,
-          status: 'approved' as const,
-          reviewedBy: user?.id || '1',
-          reviewedAt: new Date().toISOString(),
-        };
-      }
-      return attendee;
-    }));
-
-    // Create voucher for approved attendee if it doesn't exist
-    const attendee = attendees.find(a => a.id === attendeeId);
-    if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
-      const newVoucher = createVoucher(attendeeId, attendee.eventId);
-      newVoucher.id = voucherId;
-      setVouchers([...vouchers, newVoucher]);
-    }
-  };
-
-  const handleRejectRegistration = (attendeeId: string, reason: string) => {
-    setAttendees(attendees.map(attendee => {
-      if (attendee.id === attendeeId) {
-        return {
-          ...attendee,
-          status: 'rejected' as const,
-          reviewedBy: user?.id || '1',
-          reviewedAt: new Date().toISOString(),
-          rejectionReason: reason,
-        };
-      }
-      return attendee;
-    }));
-  };
-
   const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => {
     setVouchers(vouchers.map(voucher => {
       if (voucher.id !== voucherId) return voucher;
@@ -656,28 +605,41 @@ function App() {
     }));
   };
 
-  if (!isAuthenticated) {
-    return <AuthForm />;
-  }
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
 
-  // Show no access page if user has no rights
-  if (!hasAnyAccess()) {
-    return (
-      <Layout currentPage="no-access" onPageChange={() => {}} events={[]} selectedEvent={null}>
-        <NoAccessPage />
-      </Layout>
-    );
-  }
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
 
-  // Show event selection for external users
-  if (needsEventSelection()) {
-    return (
-      <EventSelector 
-        events={filteredEvents} 
-        onEventSelect={setSelectedEventId}
-      />
-    );
-  }
+  const getFilteredVouchers = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
+      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
+    }
+    return vouchers;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const filteredVouchers = getFilteredVouchers();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
+
+  // Check if external user needs to select an event
+  const needsEventSelection = () => {
+    return user?.role === 'external' && 
+           user.assignedEventIds && 
+           user.assignedEventIds.length > 1 && 
+           !selectedEventId;
+  };
 
   // Filter data for external users with selected event
   const getEventFilteredData = () => {
@@ -697,94 +659,196 @@ function App() {
 
   const { events: displayEvents, attendees: displayAttendees, vouchers: displayVouchers } = getEventFilteredData();
 
-  if (!isAuthenticated) {
-    return <AuthForm />;
-  }
-
-  // Show no access page if user has no rights
-  if (!hasAnyAccess()) {
-    return (
-      <Layout currentPage="no-access" onPageChange={() => {}} events={[]} selectedEvent={null}>
-        <NoAccessPage />
-      </Layout>
-    );
-  }
-
-  // Show event selection for external users
-  if (needsEventSelection()) {
-    return (
-      <EventSelector 
-        events={filteredEvents} 
-        onEventSelect={setSelectedEventId}
-      />
-    );
-  }
-
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'events':
-        return (
-          <EventManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            onCreateEvent={handleCreateEvent}
-            onUpdateEvent={handleUpdateEvent}
-            onDeleteEvent={handleDeleteEvent}
-          />
-        );
-      case 'attendees':
-        return (
-          <AttendeeManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            vouchers={displayVouchers}
-            onRegisterAttendee={handleRegisterAttendee}
-            onApproveRegistration={handleApproveRegistration}
-            onRejectRegistration={handleRejectRegistration}
-            userRole={user?.role || 'internal'}
-          />
-        );
-      case 'vouchers':
-        return (
-          <VoucherManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            vouchers={displayVouchers}
-            onClaimDrink={handleClaimDrink}
-            userRole={user?.role || 'internal'}
-          />
-        );
-      case 'reports':
-        return <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
-      case 'users':
-        if (user?.role !== 'admin') return <NoAccessPage />;
-        return (
-          <UserManagement
-            events={events}
-            onCreateUser={handleCreateUser}
-            onUpdateUserStatus={handleUpdateUserStatus}
-            onUpdateUser={handleUpdateUser}
-          />
-        );
-      case 'subsidiaries':
-        if (user?.role !== 'admin') return <NoAccessPage />;
-        return (
-          <SubsidiaryManagement
-            onCreateSubsidiary={handleCreateSubsidiary}
-            onUpdateSubsidiary={handleUpdateSubsidiary}
-            onDeleteSubsidiary={handleDeleteSubsidiary}
-            onUploadEmployees={handleUploadEmployees}
-          />
-        );
-      default:
-        return <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
-    }
-  };
-
   return (
-    <Layout currentPage={currentPage} onPageChange={handlePageChange} events={filteredEvents} selectedEvent={selectedEvent}>
-      {renderCurrentPage()}
-    </Layout>
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <AuthForm />
+            </PublicRoute>
+          } 
+        />
+
+        {/* Password Reset Route */}
+        <Route 
+          path="/reset-password" 
+          element={
+            <ProtectedRoute>
+              <PasswordResetPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Account Disabled Route */}
+        <Route 
+          path="/account-disabled" 
+          element={<AccountDisabledPage />} 
+        />
+
+        {/* No Access Route */}
+        <Route 
+          path="/no-access" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="no-access" onPageChange={() => {}} events={[]} selectedEvent={null}>
+                <NoAccessPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Event Selection for External Users */}
+        <Route 
+          path="/select-event" 
+          element={
+            <ProtectedRoute requiredRole="external">
+              {needsEventSelection() ? (
+                <EventSelector 
+                  events={filteredEvents} 
+                  onEventSelect={setSelectedEventId}
+                />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )}
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protected Routes */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="dashboard" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/events" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="events" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <EventManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  onCreateEvent={handleCreateEvent}
+                  onUpdateEvent={handleUpdateEvent}
+                  onDeleteEvent={handleDeleteEvent}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/attendees" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="attendees" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <AttendeeManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  vouchers={displayVouchers}
+                  onRegisterAttendee={handleRegisterAttendee}
+                  onApproveRegistration={handleApproveRegistration}
+                  onRejectRegistration={handleRejectRegistration}
+                  userRole={user?.role || 'internal'}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/vouchers" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="vouchers" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <VoucherManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  vouchers={displayVouchers}
+                  onClaimDrink={handleClaimDrink}
+                  userRole={user?.role || 'internal'}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/reports" 
+          element={
+            <ProtectedRoute>
+              <Layout currentPage="reports" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Admin Only Routes */}
+        <Route 
+          path="/users" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout currentPage="users" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <UserManagement
+                  events={events}
+                  onCreateUser={handleCreateUser}
+                  onUpdateUserStatus={handleUpdateUserStatus}
+                  onUpdateUser={handleUpdateUser}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/subsidiaries" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout currentPage="subsidiaries" onPageChange={() => {}} events={filteredEvents} selectedEvent={selectedEvent}>
+                <SubsidiaryManagement
+                  onCreateSubsidiary={handleCreateSubsidiary}
+                  onUpdateSubsidiary={handleUpdateSubsidiary}
+                  onDeleteSubsidiary={handleDeleteSubsidiary}
+                  onUploadEmployees={handleUploadEmployees}
+                />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Default Redirects */}
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? (
+              needsEventSelection() ? (
+                <Navigate to="/select-event" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+
+        {/* Catch all route */}
+        <Route 
+          path="*" 
+          element={<Navigate to="/" replace />} 
+        />
+      </Routes>
+    </Router>
   );
 }
 
