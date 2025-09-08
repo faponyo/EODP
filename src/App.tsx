@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee } from './types';
 import { createVoucher } from './utils/voucher';
 import AuthForm from './components/AuthForm';
+import PasswordResetModal from './components/PasswordResetModal';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import EventManagement from './components/EventManagement';
@@ -16,7 +17,7 @@ import NoAccessPage from './components/NoAccessPage';
 import EventSelector from './components/EventSelector';
 
 function App() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, requiresPasswordReset, resetPassword } = useAuth();
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [currentPage, setCurrentPage] = useState('dashboard');
   
