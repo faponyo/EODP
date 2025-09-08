@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { User, AuthState } from '../types';
 
+interface AuthStateExtended extends AuthState {
+  requiresPasswordReset: boolean;
+}
+
 export const useAuth = () => {
-  const [authState, setAuthState] = useState<AuthState>({
+  const [authState, setAuthState] = useState<AuthStateExtended>({
     user: null,
     isAuthenticated: false,
+    requiresPasswordReset: false,
   });
 
   useEffect(() => {
@@ -15,6 +20,7 @@ export const useAuth = () => {
       setAuthState({
         user,
         isAuthenticated: true,
+        requiresPasswordReset: user.isFirstLogin || false,
       });
     }
   }, []);
@@ -38,6 +44,7 @@ export const useAuth = () => {
       setAuthState({
         user,
         isAuthenticated: true,
+        requiresPasswordReset: user.isFirstLogin || false,
       });
       return { success: true };
     } else if (validDemo) {
@@ -49,6 +56,7 @@ export const useAuth = () => {
         role: email === 'admin@company.com' ? 'admin' : email === 'internal@company.com' ? 'internal' : 'external',
         status: 'active',
         assignedEventIds: email === 'external@company.com' ? ['1'] : undefined,
+        isFirstLogin: true,
         createdAt: new Date().toISOString(),
       };
       
@@ -56,6 +64,7 @@ export const useAuth = () => {
       setAuthState({
         user: demoUser,
         isAuthenticated: true,
+        requiresPasswordReset: true,
       });
       return { success: true };
     } else if (user && user.status === 'disabled') {
@@ -78,6 +87,7 @@ export const useAuth = () => {
       name,
       role: 'internal',
       status: 'active',
+      isFirstLogin: true,
       createdAt: new Date().toISOString(),
     };
 
@@ -88,6 +98,7 @@ export const useAuth = () => {
     setAuthState({
       user: newUser,
       isAuthenticated: true,
+      requiresPasswordReset: true,
     });
 
     return { success: true };
@@ -98,7 +109,33 @@ export const useAuth = () => {
     setAuthState({
       user: null,
       isAuthenticated: false,
+      requiresPasswordReset: false,
     });
+  };
+
+  const resetPassword = async (currentPassword: string, newPassword: string) => {
+    if (!authState.user) {
+      return { success: false, error: 'No user logged in' };
+    }
+
+    // In a real app, you would validate the current password
+    // For demo purposes, we'll just update the user
+    const updatedUser = {
+      ...authState.user,
+      isFirstLogin: false,
+      passwordChangedAt: new Date().toISOString(),
+    };
+
+    // Update in localStorage
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    
+    setAuthState({
+      user: updatedUser,
+      isAuthenticated: true,
+      requiresPasswordReset: false,
+    });
+
+    return { success: true };
   };
 
   return {
@@ -106,5 +143,6 @@ export const useAuth = () => {
     login,
     register,
     logout,
+    resetPassword,
   };
 };

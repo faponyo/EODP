@@ -7,6 +7,8 @@ export interface User {
   assignedEventIds?: string[];
   createdAt: string;
   createdBy?: string;
+  isFirstLogin?: boolean;
+  passwordChangedAt?: string;
 }
 
 export interface Event {
