@@ -283,13 +283,15 @@ const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ onPasswordReset
             )}
 
 
-          <button
-            type="button"
-            onClick={onBackToLogin}
-            className="w-full mt-3 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 focus:ring-offset-2 transition-all duration-200 border border-gray-300"
-          >
-            Back to Login
-          </button>
+            <div className="text-center mt-4">
+              <button
+                type="button"
+                onClick={onBackToLogin}
+                className="text-sm text-gray-600 hover:text-gray-800 underline transition-colors"
+              >
+                Back to Login
+              </button>
+            </div>
             <button
               type="submit"
               disabled={isLoading || passwordStrength.score < 3 || formData.newPassword !== formData.confirmPassword}
