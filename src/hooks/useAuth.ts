@@ -47,13 +47,6 @@ export const useAuth = () => {
         requiresPasswordReset: user.isFirstLogin || false,
       });
       
-      // Handle redirect after successful login
-      if (redirectTo && !user.isFirstLogin) {
-        setTimeout(() => {
-          window.location.href = redirectTo;
-        }, 100);
-      }
-      
       return { success: true };
     } else if (validDemo) {
       // Create user if demo credentials are used
