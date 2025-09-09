@@ -21,11 +21,10 @@ import AccountDisabledPage from './components/AccountDisabledPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 
-function AppContent() {
+// Separate page components to avoid state reset
+function DashboardPage() {
   const { isAuthenticated, user, logout, requiresPasswordReset, resetPassword } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedEventId, setSelectedEventId] = useState<string>('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // State management
   const [events, setEvents] = useState<Event[]>([]);
@@ -653,41 +652,6 @@ function AppContent() {
 
   const { events: displayEvents, attendees: displayAttendees, vouchers: displayVouchers } = getEventFilteredData();
 
-  // Navigation items based on user role
-  const getNavigationItems = () => {
-    const baseItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-      { id: 'events', label: 'Events', icon: Calendar },
-      { id: 'attendees', label: 'Attendees', icon: Users },
-      { id: 'vouchers', label: 'Vouchers', icon: TicketIcon },
-      { id: 'reports', label: 'Reports', icon: BarChart3 },
-    ];
-
-    if (user?.role === 'admin') {
-      baseItems.push(
-        { id: 'subsidiaries', label: 'Subsidiaries', icon: Building },
-        { id: 'users', label: 'User Management', icon: UserCog }
-      );
-    }
-
-    return baseItems;
-  };
-
-  const navigationItems = getNavigationItems();
-
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-coop-red-100 text-coop-red-800';
-      case 'internal':
-        return 'bg-coop-blue-100 text-coop-blue-800';
-      case 'external':
-        return 'bg-coop-100 text-coop-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   // Show event selector for external users with multiple events
   if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
     return (
@@ -699,190 +663,585 @@ function AppContent() {
     );
   }
 
-  // Render main application layout with navigation
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center">
-                  <Calendar className="h-8 w-8 text-coop-600 mr-3" />
-                  <h1 className="text-xl font-bold text-gray-900">Party Manager</h1>
-                </div>
-                
-                {/* Selected Event Display for External Users */}
-                {user?.role === 'external' && selectedEvent && (
-                  <div className="hidden sm:flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
-                    <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-coop-900 truncate max-w-48">
-                        {selectedEvent.name}
-                      </p>
-                      <p className="text-xs text-coop-700">
-                        {new Date(selectedEvent.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                aria-label="Toggle navigation menu"
-              >
-                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-              
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="hidden sm:inline">{user?.name}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user?.role || 'internal')}`}>
-                  {user?.role?.toUpperCase()}
-                </span>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
-                title="Logout"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-          </div>
-          
-          {/* Mobile Selected Event Display */}
-          {user?.role === 'external' && selectedEvent && (
-            <div className="sm:hidden pb-4">
-              <div className="flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
-                <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-coop-900">
-                    {selectedEvent.name}
-                  </p>
-                  <p className="text-xs text-coop-700">
-                    {new Date(selectedEvent.date).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+    <Layout 
+      currentPage="dashboard" 
+      onPageChange={() => {}} 
+      events={displayEvents} 
+      selectedEvent={selectedEvent}
+    >
+      <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
+    </Layout>
+  );
+}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Navigation Sidebar */}
-          <nav className={`lg:w-64 flex-shrink-0 ${sidebarOpen ? 'block' : 'hidden lg:block'}`}>
-            {/* Mobile overlay */}
-            {sidebarOpen && (
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
-            
-            <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 ${
-              sidebarOpen ? 'fixed top-20 left-4 right-4 z-50 lg:relative lg:top-auto lg:left-auto lg:right-auto lg:z-auto' : ''
-            }`}>
-              <ul className="space-y-2">
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPage === item.id;
-                  
-                  return (
-                    <li key={item.id}>
-                      <button
-                        onClick={() => {
-                          setCurrentPage(item.id);
-                          setSidebarOpen(false);
-                        }}
-                        className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                          isActive
-                            ? 'bg-coop-50 text-coop-700 border-l-4 border-coop-600'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        }`}
-                        aria-current={isActive ? 'page' : undefined}
-                      >
-                        <Icon className="h-5 w-5 flex-shrink-0" />
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </nav>
+function EventsPage() {
+  const { user } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  
+  // State management
+  const [events, setEvents] = useState<Event[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
 
-          {/* Main Content */}
-          <main className="flex-1 min-w-0">
-            <Routes>
-              <Route path="/dashboard" element={
-                <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
-              } />
-              <Route path="/events" element={
-                <EventManagement
-                  events={displayEvents}
-                  attendees={displayAttendees}
-                  onCreateEvent={handleCreateEvent}
-                  onUpdateEvent={handleUpdateEvent}
-                  onDeleteEvent={handleDeleteEvent}
-                />
-              } />
-              <Route path="/attendees" element={
-                <AttendeeManagement
-                  events={displayEvents}
-                  attendees={displayAttendees}
-                  vouchers={displayVouchers}
-                  onRegisterAttendee={handleRegisterAttendee}
-                  onApproveRegistration={handleApproveRegistration}
-                  onRejectRegistration={handleRejectRegistration}
-                  userRole={user?.role || 'internal'}
-                />
-              } />
-              <Route path="/vouchers" element={
-                <VoucherManagement
-                  events={displayEvents}
-                  attendees={displayAttendees}
-                  vouchers={displayVouchers}
-                  onClaimDrink={handleClaimDrink}
-                  userRole={user?.role || 'internal'}
-                />
-              } />
-              <Route path="/reports" element={
-                <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
-              } />
-              <Route path="/users" element={
-                <ProtectedRoute requiredRole="admin">
-                  <UserManagement
-                    events={events}
-                    onCreateUser={handleCreateUser}
-                    onUpdateUserStatus={handleUpdateUserStatus}
-                    onUpdateUser={handleUpdateUser}
-                  />
-                </ProtectedRoute>
-              } />
-              <Route path="/subsidiaries" element={
-                <ProtectedRoute requiredRole="admin">
-                  <SubsidiaryManagement
-                    onCreateSubsidiary={handleCreateSubsidiary}
-                    onUpdateSubsidiary={handleUpdateSubsidiary}
-                    onDeleteSubsidiary={handleDeleteSubsidiary}
-                    onUploadEmployees={handleUploadEmployees}
-                  />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </div>
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedEvents = localStorage.getItem('events');
+    const storedAttendees = localStorage.getItem('attendees');
+    const storedVouchers = localStorage.getItem('vouchers');
+
+    if (storedEvents) setEvents(JSON.parse(storedEvents));
+    if (storedAttendees) setAttendees(JSON.parse(storedAttendees));
+    if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+  }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('events', JSON.stringify(events));
+  }, [events]);
+
+  useEffect(() => {
+    localStorage.setItem('attendees', JSON.stringify(attendees));
+  }, [attendees]);
+
+  useEffect(() => {
+    localStorage.setItem('vouchers', JSON.stringify(vouchers));
+  }, [vouchers]);
+
+  const handleCreateEvent = (eventData: Omit<Event, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newEvent: Event = {
+      ...eventData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id || '1',
+    };
+    setEvents([...events, newEvent]);
+  };
+
+  const handleUpdateEvent = (id: string, eventData: Partial<Event>) => {
+    setEvents(events.map(event => 
+      event.id === id ? { ...event, ...eventData } : event
+    ));
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    setEvents(events.filter(event => event.id !== id));
+    const relatedAttendees = attendees.filter(attendee => attendee.eventId === id);
+    const attendeeIds = relatedAttendees.map(a => a.id);
+    
+    setAttendees(attendees.filter(attendee => attendee.eventId !== id));
+    setVouchers(vouchers.filter(voucher => !attendeeIds.includes(voucher.attendeeId)));
+  };
+
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
+
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
+
+  // Show event selector for external users with multiple events
+  if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+        onBackToLogin={() => {}}
+      />
+    );
+  }
+
+  return (
+    <Layout 
+      currentPage="events" 
+      onPageChange={() => {}} 
+      events={filteredEvents} 
+      selectedEvent={selectedEvent}
+    >
+      <EventManagement
+        events={filteredEvents}
+        attendees={filteredAttendees}
+        onCreateEvent={handleCreateEvent}
+        onUpdateEvent={handleUpdateEvent}
+        onDeleteEvent={handleDeleteEvent}
+      />
+    </Layout>
+  );
+}
+
+function AttendeesPage() {
+  const { user } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  
+  // State management
+  const [events, setEvents] = useState<Event[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedEvents = localStorage.getItem('events');
+    const storedAttendees = localStorage.getItem('attendees');
+    const storedVouchers = localStorage.getItem('vouchers');
+
+    if (storedEvents) setEvents(JSON.parse(storedEvents));
+    if (storedAttendees) setAttendees(JSON.parse(storedAttendees));
+    if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+  }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('attendees', JSON.stringify(attendees));
+  }, [attendees]);
+
+  useEffect(() => {
+    localStorage.setItem('vouchers', JSON.stringify(vouchers));
+  }, [vouchers]);
+
+  const handleRegisterAttendee = (attendeeData: Omit<Attendee, 'id' | 'registeredAt' | 'voucherId'>) => {
+    const attendeeId = Date.now().toString();
+    const voucherId = `voucher-${attendeeId}`;
+    
+    const newAttendee: Attendee = {
+      ...attendeeData,
+      id: attendeeId,
+      registeredAt: new Date().toISOString(),
+      voucherId,
+      status: 'pending',
+      submittedBy: user?.id || '1',
+    };
+
+    setAttendees([...attendees, newAttendee]);
+  };
+
+  const handleApproveRegistration = (attendeeId: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'approved' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+        };
+      }
+      return attendee;
+    }));
+
+    // Create voucher for approved attendee
+    const attendee = attendees.find(a => a.id === attendeeId);
+    if (attendee && !vouchers.find(v => v.attendeeId === attendeeId)) {
+      const newVoucher = createVoucher(attendeeId, attendee.eventId);
+      newVoucher.id = attendee.voucherId;
+      setVouchers([...vouchers, newVoucher]);
+    }
+  };
+
+  const handleRejectRegistration = (attendeeId: string, reason: string) => {
+    setAttendees(attendees.map(attendee => {
+      if (attendee.id === attendeeId) {
+        return {
+          ...attendee,
+          status: 'rejected' as const,
+          reviewedBy: user?.id || '1',
+          reviewedAt: new Date().toISOString(),
+          rejectionReason: reason,
+        };
+      }
+      return attendee;
+    }));
+  };
+
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
+
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
+
+  const getFilteredVouchers = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
+      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
+    }
+    return vouchers;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const filteredVouchers = getFilteredVouchers();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
+
+  // Show event selector for external users with multiple events
+  if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+        onBackToLogin={() => {}}
+      />
+    );
+  }
+
+  return (
+    <Layout 
+      currentPage="attendees" 
+      onPageChange={() => {}} 
+      events={filteredEvents} 
+      selectedEvent={selectedEvent}
+    >
+      <AttendeeManagement
+        events={filteredEvents}
+        attendees={filteredAttendees}
+        vouchers={filteredVouchers}
+        onRegisterAttendee={handleRegisterAttendee}
+        onApproveRegistration={handleApproveRegistration}
+        onRejectRegistration={handleRejectRegistration}
+        userRole={user?.role || 'internal'}
+      />
+    </Layout>
+  );
+}
+
+function VouchersPage() {
+  const { user } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  
+  // State management
+  const [events, setEvents] = useState<Event[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedEvents = localStorage.getItem('events');
+    const storedAttendees = localStorage.getItem('attendees');
+    const storedVouchers = localStorage.getItem('vouchers');
+
+    if (storedEvents) setEvents(JSON.parse(storedEvents));
+    if (storedAttendees) setAttendees(JSON.parse(storedAttendees));
+    if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+  }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('vouchers', JSON.stringify(vouchers));
+  }, [vouchers]);
+
+  const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard', itemName?: string) => {
+    setVouchers(vouchers.map(voucher => {
+      if (voucher.id !== voucherId) return voucher;
+
+      const updatedVoucher = { ...voucher };
+      
+      if (drinkType === 'soft' && voucher.softDrinks.claimed < voucher.softDrinks.total) {
+        updatedVoucher.softDrinks.claimed += 1;
+      } else if (drinkType === 'hard' && voucher.hardDrinks.claimed < voucher.hardDrinks.total) {
+        updatedVoucher.hardDrinks.claimed += 1;
+      }
+
+      // Add claim to history
+      const newClaim = {
+        id: Date.now().toString(),
+        voucherId,
+        drinkType,
+        itemName,
+        claimedAt: new Date().toISOString(),
+        claimedBy: user?.id || '1',
+      };
+
+      if (!updatedVoucher.claimHistory) {
+        updatedVoucher.claimHistory = [];
+      }
+      updatedVoucher.claimHistory.push(newClaim);
+
+      // Check if fully claimed
+      updatedVoucher.isFullyClaimed = 
+        updatedVoucher.softDrinks.claimed >= updatedVoucher.softDrinks.total &&
+        updatedVoucher.hardDrinks.claimed >= updatedVoucher.hardDrinks.total;
+
+      return updatedVoucher;
+    }));
+  };
+
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
+
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
+
+  const getFilteredVouchers = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
+      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
+    }
+    return vouchers;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const filteredVouchers = getFilteredVouchers();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
+
+  // Show event selector for external users with multiple events
+  if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+        onBackToLogin={() => {}}
+      />
+    );
+  }
+
+  return (
+    <Layout 
+      currentPage="vouchers" 
+      onPageChange={() => {}} 
+      events={filteredEvents} 
+      selectedEvent={selectedEvent}
+    >
+      <VoucherManagement
+        events={filteredEvents}
+        attendees={filteredAttendees}
+        vouchers={filteredVouchers}
+        onClaimDrink={handleClaimDrink}
+        userRole={user?.role || 'internal'}
+      />
+    </Layout>
+  );
+}
+
+function ReportsPage() {
+  const { user } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  
+  // State management
+  const [events, setEvents] = useState<Event[]>([]);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedEvents = localStorage.getItem('events');
+    const storedAttendees = localStorage.getItem('attendees');
+    const storedVouchers = localStorage.getItem('vouchers');
+
+    if (storedEvents) setEvents(JSON.parse(storedEvents));
+    if (storedAttendees) setAttendees(JSON.parse(storedAttendees));
+    if (storedVouchers) setVouchers(JSON.parse(storedVouchers));
+  }, []);
+
+  // Filter data based on user role and permissions
+  const getFilteredEvents = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return events.filter(event => user.assignedEventIds!.includes(event.id));
+    }
+    return events;
+  };
+
+  const getFilteredAttendees = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      return attendees.filter(attendee => user.assignedEventIds!.includes(attendee.eventId));
+    }
+    return attendees;
+  };
+
+  const getFilteredVouchers = () => {
+    if (user?.role === 'external' && user.assignedEventIds) {
+      const allowedAttendeeIds = getFilteredAttendees().map(a => a.id);
+      return vouchers.filter(voucher => allowedAttendeeIds.includes(voucher.attendeeId));
+    }
+    return vouchers;
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const filteredAttendees = getFilteredAttendees();
+  const filteredVouchers = getFilteredVouchers();
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
+
+  // Show event selector for external users with multiple events
+  if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
+    return (
+      <EventSelector 
+        events={filteredEvents} 
+        onEventSelect={setSelectedEventId}
+        onBackToLogin={() => {}}
+      />
+    );
+  }
+
+  return (
+    <Layout 
+      currentPage="reports" 
+      onPageChange={() => {}} 
+      events={filteredEvents} 
+      selectedEvent={selectedEvent}
+    >
+      <Reports events={filteredEvents} attendees={filteredAttendees} vouchers={filteredVouchers} />
+    </Layout>
+  );
+}
+
+function UsersPage() {
+  const { user } = useAuth();
+  
+  // State management
+  const [events, setEvents] = useState<Event[]>([]);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedEvents = localStorage.getItem('events');
+    if (storedEvents) setEvents(JSON.parse(storedEvents));
+  }, []);
+
+  const handleCreateUser = (userData: Omit<User, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newUser: User = {
+      ...userData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id || '1',
+    };
+    
+    // Update users in localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+  };
+
+  const handleUpdateUserStatus = useCallback((userId: string, status: 'active' | 'disabled') => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: User) => 
+      u.id === userId ? { ...u, status } : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  }, []);
+
+  const handleUpdateUser = (userId: string, userData: Partial<User>) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const updatedUsers = users.map((u: User) => 
+      u.id === userId ? { ...u, ...userData } : u
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+  };
+
+  return (
+    <Layout 
+      currentPage="users" 
+      onPageChange={() => {}} 
+      events={events} 
+      selectedEvent={null}
+    >
+      <UserManagement
+        events={events}
+        onCreateUser={handleCreateUser}
+        onUpdateUserStatus={handleUpdateUserStatus}
+        onUpdateUser={handleUpdateUser}
+      />
+    </Layout>
+  );
+}
+
+function SubsidiariesPage() {
+  const { user } = useAuth();
+  
+  // State management
+  const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
+  const [subsidiaryEmployees, setSubsidiaryEmployees] = useState<SubsidiaryEmployee[]>([]);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const storedSubsidiaries = localStorage.getItem('subsidiaries');
+    const storedSubsidiaryEmployees = localStorage.getItem('subsidiaryEmployees');
+    
+    if (storedSubsidiaries) setSubsidiaries(JSON.parse(storedSubsidiaries));
+    if (storedSubsidiaryEmployees) setSubsidiaryEmployees(JSON.parse(storedSubsidiaryEmployees));
+  }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('subsidiaries', JSON.stringify(subsidiaries));
+  }, [subsidiaries]);
+
+  useEffect(() => {
+    localStorage.setItem('subsidiaryEmployees', JSON.stringify(subsidiaryEmployees));
+  }, [subsidiaryEmployees]);
+
+  const handleCreateSubsidiary = (subsidiaryData: Omit<Subsidiary, 'id' | 'createdAt' | 'createdBy'>) => {
+    const newSubsidiary: Subsidiary = {
+      ...subsidiaryData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id || '1',
+    };
+    setSubsidiaries([...subsidiaries, newSubsidiary]);
+  };
+
+  const handleUpdateSubsidiary = (id: string, subsidiaryData: Partial<Subsidiary>) => {
+    setSubsidiaries(subsidiaries.map(sub => 
+      sub.id === id ? { ...sub, ...subsidiaryData } : sub
+    ));
+  };
+
+  const handleDeleteSubsidiary = (id: string) => {
+    setSubsidiaries(subsidiaries.filter(sub => sub.id !== id));
+    // Also remove related employees
+    setSubsidiaryEmployees(subsidiaryEmployees.filter(emp => emp.subsidiaryId !== id));
+  };
+
+  const handleUploadEmployees = (subsidiaryId: string, employees: Omit<SubsidiaryEmployee, 'id' | 'subsidiaryId' | 'createdAt' | 'uploadedBy'>[]) => {
+    const newEmployees = employees.map(emp => ({
+      ...emp,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      subsidiaryId,
+      createdAt: new Date().toISOString(),
+      uploadedBy: user?.id || '1',
+    }));
+    setSubsidiaryEmployees([...subsidiaryEmployees, ...newEmployees]);
+  };
+
+  return (
+    <Layout 
+      currentPage="subsidiaries" 
+      onPageChange={() => {}} 
+      events={[]} 
+      selectedEvent={null}
+    >
+      <SubsidiaryManagement
+        onCreateSubsidiary={handleCreateSubsidiary}
+        onUpdateSubsidiary={handleUpdateSubsidiary}
+        onDeleteSubsidiary={handleDeleteSubsidiary}
+        onUploadEmployees={handleUploadEmployees}
+      />
+    </Layout>
   );
 }
 
@@ -907,7 +1266,24 @@ function App() {
       <Route path="/account-disabled" element={<AccountDisabledPage />} />
       <Route path="/*" element={
         <ProtectedRoute>
-          <AppContent />
+          <Routes>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/attendees" element={<AttendeesPage />} />
+            <Route path="/vouchers" element={<VouchersPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/users" element={
+              <ProtectedRoute requiredRole="admin">
+                <UsersPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/subsidiaries" element={
+              <ProtectedRoute requiredRole="admin">
+                <SubsidiariesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </ProtectedRoute>
       } />
     </Routes>
