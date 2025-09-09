@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Calendar, Users, TicketIcon, BarChart3, UserCog, Building, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee, User } from './types';
@@ -7,7 +7,7 @@ import { createVoucher } from './utils/voucher';
 
 // Components
 import AuthForm from './components/AuthForm';
-import PasswordResetModal from './components/PasswordResetModal';
+import PasswordResetPage from './components/PasswordResetPage';
 import Dashboard from './components/Dashboard';
 import EventManagement from './components/EventManagement';
 import AttendeeManagement from './components/AttendeeManagement';
@@ -16,8 +16,12 @@ import Reports from './components/Reports';
 import UserManagement from './components/UserManagement';
 import SubsidiaryManagement from './components/SubsidiaryManagement';
 import EventSelector from './components/EventSelector';
+import NoAccessPage from './components/NoAccessPage';
+import AccountDisabledPage from './components/AccountDisabledPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 
-function App() {
+function AppContent() {
   const { isAuthenticated, user, logout, requiresPasswordReset, resetPassword } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedEventId, setSelectedEventId] = useState<string>('');
@@ -631,14 +635,6 @@ function App() {
   const filteredVouchers = getFilteredVouchers();
   const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) || null : null;
 
-  // Check if external user needs to select an event
-  const needsEventSelection = () => {
-    return user?.role === 'external' && 
-           user.assignedEventIds && 
-           user.assignedEventIds.length > 1 && 
-           !selectedEventId;
-  };
-
   // Filter data for external users with selected event
   const getEventFilteredData = () => {
     if (user?.role === 'external' && selectedEventId) {
@@ -692,23 +688,8 @@ function App() {
     }
   };
 
-  // Show login form if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Show password reset modal if required
-  if (requiresPasswordReset) {
-    return <Navigate to="/reset-password" replace />;
-  }
-
-  // Show no access page for users without proper permissions
-  if (user.role === 'external' && (!user.assignedEventIds || user.assignedEventIds.length === 0)) {
-    return <Navigate to="/no-access" replace />;
-  }
-
   // Show event selector for external users with multiple events
-  if (user.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
+  if (user?.role === 'external' && user.assignedEventIds && user.assignedEventIds.length > 1 && !selectedEventId) {
     return (
       <EventSelector 
         events={filteredEvents} 
@@ -718,84 +699,7 @@ function App() {
     );
   }
 
-  // Render main application
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
-      case 'events':
-        return (
-          <EventManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            onCreateEvent={handleCreateEvent}
-            onUpdateEvent={handleUpdateEvent}
-            onDeleteEvent={handleDeleteEvent}
-          />
-        );
-      case 'attendees':
-        return (
-          <AttendeeManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            vouchers={displayVouchers}
-            onRegisterAttendee={handleRegisterAttendee}
-            onApproveRegistration={handleApproveRegistration}
-            onRejectRegistration={handleRejectRegistration}
-            userRole={user?.role || 'internal'}
-          />
-        );
-      case 'vouchers':
-        return (
-          <VoucherManagement
-            events={displayEvents}
-            attendees={displayAttendees}
-            vouchers={displayVouchers}
-            onClaimDrink={handleClaimDrink}
-            userRole={user?.role || 'internal'}
-          />
-        );
-      case 'reports':
-        return <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
-      case 'users':
-        if (user.role !== 'admin') {
-          return (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-              <p className="text-gray-600">You don't have permission to access this page.</p>
-            </div>
-          );
-        }
-        return (
-          <UserManagement
-            events={events}
-            onCreateUser={handleCreateUser}
-            onUpdateUserStatus={handleUpdateUserStatus}
-            onUpdateUser={handleUpdateUser}
-          />
-        );
-      case 'subsidiaries':
-        if (user.role !== 'admin') {
-          return (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-              <p className="text-gray-600">You don't have permission to access this page.</p>
-            </div>
-          );
-        }
-        return (
-          <SubsidiaryManagement
-            onCreateSubsidiary={handleCreateSubsidiary}
-            onUpdateSubsidiary={handleUpdateSubsidiary}
-            onDeleteSubsidiary={handleDeleteSubsidiary}
-            onUploadEmployees={handleUploadEmployees}
-          />
-        );
-      default:
-        return <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />;
-    }
-  };
-
+  // Render main application layout with navigation
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -810,7 +714,7 @@ function App() {
                 </div>
                 
                 {/* Selected Event Display for External Users */}
-                {user.role === 'external' && selectedEvent && (
+                {user?.role === 'external' && selectedEvent && (
                   <div className="hidden sm:flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
                     <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
                     <div>
@@ -836,9 +740,9 @@ function App() {
               </button>
               
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span className="hidden sm:inline">{user.name}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                  {user.role.toUpperCase()}
+                <span className="hidden sm:inline">{user?.name}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user?.role || 'internal')}`}>
+                  {user?.role?.toUpperCase()}
                 </span>
               </div>
               <button
@@ -853,7 +757,7 @@ function App() {
           </div>
           
           {/* Mobile Selected Event Display */}
-          {user.role === 'external' && selectedEvent && (
+          {user?.role === 'external' && selectedEvent && (
             <div className="sm:hidden pb-4">
               <div className="flex items-center bg-coop-50 border border-coop-200 rounded-lg px-3 py-2">
                 <div className="w-2 h-2 bg-coop-600 rounded-full mr-2"></div>
@@ -917,11 +821,96 @@ function App() {
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
-            {renderCurrentPage()}
+            <Routes>
+              <Route path="/dashboard" element={
+                <Dashboard events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
+              } />
+              <Route path="/events" element={
+                <EventManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  onCreateEvent={handleCreateEvent}
+                  onUpdateEvent={handleUpdateEvent}
+                  onDeleteEvent={handleDeleteEvent}
+                />
+              } />
+              <Route path="/attendees" element={
+                <AttendeeManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  vouchers={displayVouchers}
+                  onRegisterAttendee={handleRegisterAttendee}
+                  onApproveRegistration={handleApproveRegistration}
+                  onRejectRegistration={handleRejectRegistration}
+                  userRole={user?.role || 'internal'}
+                />
+              } />
+              <Route path="/vouchers" element={
+                <VoucherManagement
+                  events={displayEvents}
+                  attendees={displayAttendees}
+                  vouchers={displayVouchers}
+                  onClaimDrink={handleClaimDrink}
+                  userRole={user?.role || 'internal'}
+                />
+              } />
+              <Route path="/reports" element={
+                <Reports events={displayEvents} attendees={displayAttendees} vouchers={displayVouchers} />
+              } />
+              <Route path="/users" element={
+                <ProtectedRoute requiredRole="admin">
+                  <UserManagement
+                    events={events}
+                    onCreateUser={handleCreateUser}
+                    onUpdateUserStatus={handleUpdateUserStatus}
+                    onUpdateUser={handleUpdateUser}
+                  />
+                </ProtectedRoute>
+              } />
+              <Route path="/subsidiaries" element={
+                <ProtectedRoute requiredRole="admin">
+                  <SubsidiaryManagement
+                    onCreateSubsidiary={handleCreateSubsidiary}
+                    onUpdateSubsidiary={handleUpdateSubsidiary}
+                    onDeleteSubsidiary={handleDeleteSubsidiary}
+                    onUploadEmployees={handleUploadEmployees}
+                  />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
           </main>
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={
+        <PublicRoute>
+          <AuthForm />
+        </PublicRoute>
+      } />
+      <Route path="/reset-password" element={
+        <ProtectedRoute>
+          <PasswordResetPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/no-access" element={
+        <ProtectedRoute>
+          <NoAccessPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/account-disabled" element={<AccountDisabledPage />} />
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <AppContent />
+        </ProtectedRoute>
+      } />
+    </Routes>
   );
 }
 
