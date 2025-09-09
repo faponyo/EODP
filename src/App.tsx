@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Calendar, Users, TicketIcon, BarChart3, UserCog, Building, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import { Event, Attendee, Voucher, Subsidiary, SubsidiaryEmployee, User } from './types';
