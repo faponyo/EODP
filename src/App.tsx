@@ -693,36 +693,17 @@ function App() {
 
   // Show login form if not authenticated
   if (!isAuthenticated || !user) {
-    return <AuthForm />;
+    return <Navigate to="/login" replace />;
   }
 
   // Show password reset modal if required
   if (requiresPasswordReset) {
-    return (
-      <PasswordResetModal
-        onPasswordReset={resetPassword}
-        userEmail={user.email}
-        onBackToLogin={logout}
-      />
-    );
+    return <Navigate to="/reset-password" replace />;
   }
 
   // Show no access page for users without proper permissions
   if (user.role === 'external' && (!user.assignedEventIds || user.assignedEventIds.length === 0)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Access</h1>
-          <p className="text-gray-600 mb-6">You don't have access to any events.</p>
-          <button
-            onClick={logout}
-            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    );
+    return <Navigate to="/no-access" replace />;
   }
 
   // Show event selector for external users with multiple events
