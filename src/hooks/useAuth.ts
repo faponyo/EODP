@@ -25,7 +25,7 @@ export const useAuth = () => {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, redirectTo?: string) => {
     // Simple authentication logic (in real app, this would call an API)
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const user = users.find((u: User) => u.email === email);
@@ -46,6 +46,14 @@ export const useAuth = () => {
         isAuthenticated: true,
         requiresPasswordReset: user.isFirstLogin || false,
       });
+      
+      // Handle redirect after successful login
+      if (redirectTo && !user.isFirstLogin) {
+        setTimeout(() => {
+          window.location.href = redirectTo;
+        }, 100);
+      }
+      
       return { success: true };
     } else if (validDemo) {
       // Create user if demo credentials are used

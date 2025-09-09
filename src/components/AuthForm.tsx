@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, User, Shield, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const AuthForm: React.FC = () => {
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -19,7 +21,9 @@ const AuthForm: React.FC = () => {
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      // Get redirect path from location state or default to dashboard
+      const redirectTo = (location.state as any)?.from?.pathname || '/dashboard';
+      const result = await login(formData.email, formData.password, redirectTo);
 
       if (!result.success) {
         setError(result.error || 'Authentication failed');
