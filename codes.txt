@@ -1,0 +1,48 @@
+import java.security.SecureRandom;
+import java.util.Set;
+import java.util.concurrent.*;
+
+public class RandomCodeService {
+    private static final char[] SAFE_LETTERS = "ABCDEFGHJKMNPQRTUVWXY".toCharArray(); // 22 letters
+    private static final char[] DIGITS = "0123456789".toCharArray(); // 10 digits
+    private static final char[] CHAR_POOL;
+
+    static {
+        CHAR_POOL = new char[SAFE_LETTERS.length + DIGITS.length];
+        System.arraycopy(SAFE_LETTERS, 0, CHAR_POOL, 0, SAFE_LETTERS.length);
+        System.arraycopy(DIGITS, 0, CHAR_POOL, SAFE_LETTERS.length, DIGITS.length);
+    }
+
+    private static final SecureRandom random = new SecureRandom();
+    private static final Set<String> generatedCodes = ConcurrentHashMap.newKeySet();
+
+    public static String generateUniqueCode() {
+        while (true) {
+            StringBuilder sb = new StringBuilder(3);
+            for (int i = 0; i < 3; i++) {
+                sb.append(CHAR_POOL[random.nextInt(CHAR_POOL.length)]);
+            }
+            String code = sb.toString();
+            if (isValid(code) && generatedCodes.add(code)) {
+                return code;
+            }
+        }
+    }
+
+    private static boolean isValid(String code) {
+        boolean hasLetter = code.chars().anyMatch(Character::isLetter);
+        boolean hasDigit = code.chars().anyMatch(Character::isDigit);
+        return hasLetter && hasDigit;
+    }
+
+    public static void main(String[] args) {
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        for (int i = 0; i < 10; i++) {
+            executor.submit(() -> {
+                String code = generateUniqueCode();
+                System.out.println(Thread.currentThread().getName() + ": " + code);
+            });
+        }
+        executor.shutdown();
+    }
+}

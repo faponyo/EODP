@@ -1,202 +1,399 @@
-import React from 'react';
-import { Calendar, Users, TicketIcon, TrendingUp, Clock, CheckCircle } from 'lucide-react';
-import { Event, Attendee, Voucher } from '../types';
+import React, {useEffect, useMemo, useState} from 'react';
+import {AlertTriangle, Calendar, CheckCircle, Clock, TicketIcon, TrendingUp, Users} from 'lucide-react';
+import {Attendee, Event, Voucher} from '../types';
+import EventTimer from './EventTimer';
+import eventService from "../services/Events.ts";
+import checkInService from "../services/CheckIn.ts";
+import {useAuthContext} from "../common/useAuthContext.tsx";
+import {useEventContext} from "../common/useEventContext.tsx";
+import {PERMISSIONS} from "../common/constants.ts";
 
-interface DashboardProps {
-  events: Event[];
-  attendees: Attendee[];
-  vouchers: Voucher[];
-}
 
-const Dashboard: React.FC<DashboardProps> = ({ events, attendees, vouchers }) => {
-  const totalEvents = events.length;
-  const totalAttendees = attendees.length;
-  const totalVouchers = vouchers.length;
-  const claimedVouchers = vouchers.filter(v => v.isFullyClaimed).length;
-  const totalDrinksClaimed = vouchers.reduce(
-    (sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 
-    0
-  );
 
-  const upcomingEvents = events
-    .filter(e => new Date(e.date) > new Date())
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(0, 3);
+const Dashboard: React.FC = () => {
 
-  const recentAttendees = attendees
-    .sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime())
-    .slice(0, 5);
+    const { hasPermission} = useAuthContext();
+    const {preSelectedEvent} = useEventContext();
 
-  const stats = [
-    {
-      name: 'Total Events',
-      value: totalEvents,
-      icon: Calendar,
-      color: 'blue',
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-    },
-    {
-      name: 'Total Attendees',
-      value: totalAttendees,
-      icon: Users,
-      color: 'purple',
-      bgColor: 'bg-purple-50',
-      iconColor: 'text-purple-600',
-    },
-    {
-      name: 'Active Vouchers',
-      value: totalVouchers,
-      icon: TicketIcon,
-      color: 'green',
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600',
-    },
-    {
-      name: 'Drinks Claimed',
-      value: totalDrinksClaimed,
-      icon: TrendingUp,
-      color: 'orange',
-      bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600',
-    },
-  ];
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">Welcome to your party management dashboard</p>
-      </div>
+    const [upcomingEvents, setUpcomingEvents] = useState<Record[]>([]);
+    const [recentAttendees, setRecentAttendees] = useState<Record[]>([]);
+    const [stats, setStats] = useState<{
+        totalEvents: number,
+        totalAttendees: number,
+        approvedAttendees: number,
+        pendingAttendees: number,
+        totalVouchers: number,
+        claimedVouchers: number,
+        totalDrinksClaimed: number,
+        partialVouchers: number,
+        activeVouchers: number
+    }>({
+        approvedAttendees: 0,
+        claimedVouchers: 0,
+        pendingAttendees: 0,
+        totalAttendees: 0,
+        totalDrinksClaimed: 0,
+        totalEvents: 0,
+        totalVouchers: 0,
+        partialVouchers: 0,
+        activeVouchers: 0
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className={`${stat.bgColor} p-3 rounded-lg`}>
-                  <Icon className={`h-6 w-6 ${stat.iconColor}`} />
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-sm text-gray-600">{stat.name}</p>
-                </div>
-              </div>
+    });
+
+
+    useEffect(() => {
+        fetchUpcomingEvents()
+        fetchRecentAttendess()
+        fetchGeneralStatus()
+    }, []);
+
+
+    const fetchRecentAttendess = async () => {
+
+        if (hasPermission(PERMISSIONS.VAEA)) {
+
+            if (preSelectedEvent) {
+
+                await checkInService.getAttendeesPaginated(1, 10, preSelectedEvent.id, undefined, undefined).then(
+                    data => {
+
+                        const {content} = data;
+
+                        setRecentAttendees(content || [])
+                    }
+                ).catch(error => {
+                    console.log(error)
+                    setRecentAttendees([])
+
+
+                });
+
+
+            } else {
+                setRecentAttendees([])
+            }
+
+
+        } else {
+
+            await checkInService.getRecentAttendees().then(
+                data => {
+
+                    setRecentAttendees(data)
+                }
+            ).catch(error => {
+                console.log(error)
+
+
+            });
+        }
+
+    }
+
+    const fetchUpcomingEvents = async () => {
+        if (hasPermission(PERMISSIONS.VAEO)) {
+            setUpcomingEvents(preSelectedEvent ? [preSelectedEvent] : []);
+
+
+        } else if (hasPermission(PERMISSIONS.VAE)) {
+
+            await eventService.getEventsByStatus("upcoming").then(
+                data => {
+                    setUpcomingEvents(data)
+                }
+            ).catch(error => {
+                console.log(error)
+
+
+            });
+        }
+    }
+
+    const fetchGeneralStatus = async () => {
+
+        if (hasPermission(PERMISSIONS.VAE)) {
+
+            await checkInService.getGeneralStats().then(
+                data => {
+
+                    const {events, attendees, vouchers, claimedVouchers, partiallyClaimed, activeVouchers} = data
+                    setStats({
+                        approvedAttendees: attendees,
+                        claimedVouchers: claimedVouchers,
+                        pendingAttendees: 0,
+                        totalAttendees: attendees,
+                        totalDrinksClaimed: 0,
+                        totalEvents: events,
+                        totalVouchers: vouchers,
+                        partialVouchers: partiallyClaimed,
+                        activeVouchers: activeVouchers,
+
+                    })
+
+                }
+            ).catch(error => {
+                console.log(error)
+
+
+            });
+        }
+    }
+
+
+    // Performance alerts for large datasets
+    // const performanceAlerts = useMemo(() => {
+    //     const alerts = [];
+
+    //     if (attendees.length > 1000) {
+    //         alerts.push({
+    //             type: 'info',
+    //             message: `Managing ${attendees?.length?.toLocaleString()} attendees - pagination is active for optimal performance`,
+    //         });
+    //     }
+    //
+    //     if (vouchers.length > 1000) {
+    //         alerts.push({
+    //             type: 'info',
+    //             message: `Tracking ${vouchers?.length?.toLocaleString()} vouchers - using optimized display`,
+    //         });
+    //     }
+    //
+    //     if (attendees.length > 5000) {
+    //         alerts.push({
+    //             type: 'warning',
+    //             message: 'Large dataset detected - consider archiving old events for better performance',
+    //         });
+    //     }
+    //
+    //     return alerts;
+    // }, [attendees.length, vouchers.length]);
+
+    const dashboardStats = [
+        {
+            name: 'Events',
+            value: stats?.totalEvents?.toLocaleString(),
+            icon: Calendar,
+            color: 'blue',
+            bgColor: 'bg-coop-50',
+            iconColor: 'text-coop-600',
+        },
+        {
+            name: 'Attendees',
+            value: stats?.approvedAttendees?.toLocaleString(),
+            icon: Users,
+            color: 'purple',
+            bgColor: 'bg-coop-blue-50',
+            iconColor: 'text-coop-blue-600',
+        },
+        {
+            name: 'Active Vouchers',
+            value: stats?.activeVouchers?.toLocaleString(),
+            icon: TicketIcon,
+            color: 'green',
+            bgColor: 'bg-coop-100',
+            iconColor: 'text-coop-700',
+        },
+        {
+            name: 'Claimed Vouchers',
+            value: stats?.claimedVouchers?.toLocaleString(),
+            icon: TrendingUp,
+            color: 'orange',
+            bgColor: 'bg-coop-orange-50',
+            iconColor: 'text-coop-orange-600',
+        },
+    ];
+
+    return (
+        <div className="space-y-8">
+            <div>
+                {/*<h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>*/}
+                <p className="text-gray-600">Welcome to your Event Management dashboard</p>
             </div>
-          );
-        })}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Upcoming Events */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 text-blue-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
-            </div>
-          </div>
-          <div className="p-6">
-            {upcomingEvents.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{event.name}</h3>
-                      <p className="text-sm text-gray-600">{event.location}</p>
-                      <p className="text-sm text-blue-600">{new Date(event.date).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">
-                        {attendees.filter(a => a.eventId === event.id).length} / {event.maxAttendees}
-                      </p>
-                      <p className="text-xs text-gray-400">Attendees</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No upcoming events scheduled</p>
-            )}
-          </div>
-        </div>
+            {/* Performance Alerts */}
+            {/*{performanceAlerts.length > 0 && (*/}
+            {/*    <div className="space-y-3">*/}
+            {/*        {performanceAlerts.map((alert, index) => (*/}
+            {/*            <div*/}
+            {/*                key={index}*/}
+            {/*                className={`p-4 rounded-lg border ${*/}
+            {/*                    alert.type === 'warning'*/}
+            {/*                        ? 'bg-yellow-50 border-yellow-200 text-yellow-800'*/}
+            {/*                        : 'bg-blue-50 border-blue-200 text-blue-800'*/}
+            {/*                }`}*/}
+            {/*            >*/}
+            {/*                <div className="flex items-center">*/}
+            {/*                    <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0"/>*/}
+            {/*                    <span className="text-sm">{alert.message}</span>*/}
+            {/*                </div>*/}
+            {/*            </div>*/}
+            {/*        ))}*/}
+            {/*    </div>*/}
+            {/*)}*/}
 
-        {/* Recent Attendees */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Recent Registrations</h2>
-            </div>
-          </div>
-          <div className="p-6">
-            {recentAttendees.length > 0 ? (
-              <div className="space-y-4">
-                {recentAttendees.map((attendee) => {
-                  const event = events.find(e => e.id === attendee.eventId);
-                  return (
-                    <div key={attendee.id} className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{attendee.name}</h3>
-                        <p className="text-sm text-gray-600">{attendee.email}</p>
-                        <p className="text-sm text-blue-600">{event?.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">
-                          {new Date(attendee.registeredAt).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-gray-400">Registered</p>
-                      </div>
-                    </div>
-                  );
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {dashboardStats.map((stat) => {
+                    const Icon = stat.icon;
+                    return (
+                        <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center">
+                                <div className={`${stat.bgColor} p-3 rounded-lg`}>
+                                    <Icon className={`h-6 w-6 ${stat.iconColor}`}/>
+                                </div>
+                                <div className="ml-4">
+                                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                                    <p className="text-sm text-gray-600">{stat.name}</p>
+                                </div>
+                            </div>
+                        </div>
+                    );
                 })}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No recent registrations</p>
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
 
-      {/* Voucher Usage Summary */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Voucher Usage Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Upcoming Events */}
+                {(hasPermission(PERMISSIONS.VAE) || hasPermission(PERMISSIONS.VAEO)) && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                        <div className="p-6 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <Clock className="h-5 w-5 text-coop-600 mr-2"/>
+                                    <h2 className="text-lg font-semibold text-gray-900">Upcoming Events</h2>
+                                </div>
+                                {upcomingEvents.length > 5 && (
+                                    <span className="text-sm text-gray-500">Showing 5 of {upcomingEvents.length}</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-6">
+                            {upcomingEvents.length > 0 ? (
+                                <div className="space-y-4">
+                                    {upcomingEvents.map((event) => {
+                                        const capacityPercentage = (event?.noOfAttendees / event?.maxAttendees) * 100;
+
+                                        return (
+                                            <div key={event.id}
+                                                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-medium text-gray-900 truncate">{event?.name}</h3>
+                                                    <p className="text-sm text-gray-600 truncate">{event?.location}</p>
+                                                    <div className="mt-2">
+                                                        <EventTimer eventDate={event?.date} eventName={event?.name}
+                                                                    compact/>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right ml-4">
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {event?.noOfAttendees?.toLocaleString()} / {event?.maxAttendees?.toLocaleString()}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">Attendees</p>
+                                                    <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
+                                                        <div
+                                                            className="bg-coop-500 h-1.5 rounded-full transition-all duration-300"
+                                                            style={{width: `${Math.min(capacityPercentage, 100)}%`}}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-center py-8">No upcoming events scheduled</p>
+                            )}
+                        </div>
+
+                    </div>
+                )}
+
+                {/* Recent Attendees */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div className="p-6 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <CheckCircle className="h-5 w-5 text-coop-600 mr-2"/>
+                                <h2 className="text-lg font-semibold text-gray-900">Recent CheckIns</h2>
+                            </div>
+                            {recentAttendees.length >= 10 && (
+                                <span className="text-sm text-gray-500">Latest 5</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-6">
+                        {recentAttendees.length > 0 ? (
+                            <div className="space-y-4">
+                                {recentAttendees.map((attendee) => {
+                                    return (
+                                        <div key={attendee.id} className="flex items-center justify-between">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-medium text-gray-900 truncate">{attendee.name}</h3>
+                                                <p className="text-sm text-gray-600 truncate">{attendee.email}</p>
+                                                <p className="text-sm text-coop-600 truncate">{attendee?.eventId?.name}</p>
+                                            </div>
+                                            <div className="text-right ml-4">
+                                                <p className="text-sm text-gray-500">
+                                                    {new Date(attendee.registeredAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="text-xs text-gray-400">CheckedIn</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-8">No recent registrations</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Voucher Usage Summary */
+            }
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">Voucher Usage Overview</h2>
+                </div>
+                <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="text-center">
+                            <div
+                                className="text-3xl font-bold text-coop-600">{stats?.totalVouchers?.toLocaleString()}</div>
+                            <div className="text-sm text-gray-600">Total Vouchers</div>
+                        </div>
+                        <div className="text-center">
+                            <div
+                                className="text-3xl font-bold text-coop-700">{stats?.claimedVouchers?.toLocaleString()}</div>
+                            <div className="text-sm text-gray-600">Fully Claimed</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-coop-orange-600">
+                                {(stats?.partialVouchers)?.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-gray-600">Partially Used</div>
+                        </div>
+                    </div>
+                    {stats.totalVouchers > 0 && (
+                        <div className="mt-6">
+                            <div className="bg-gray-200 rounded-full h-3">
+                                <div
+                                    className="bg-coop-500 h-3 rounded-full transition-all duration-300"
+                                    style={{width: `${(stats.claimedVouchers / stats.totalVouchers) * 100}%`}}
+                                ></div>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-2 text-center">
+                                {Math.round((stats.claimedVouchers / stats.totalVouchers) * 100)}% of vouchers fully
+                                utilized
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{totalVouchers}</div>
-              <div className="text-sm text-gray-600">Total Vouchers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600">{claimedVouchers}</div>
-              <div className="text-sm text-gray-600">Fully Claimed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-orange-600">{totalVouchers - claimedVouchers}</div>
-              <div className="text-sm text-gray-600">Partially Used</div>
-            </div>
-          </div>
-          {totalVouchers > 0 && (
-            <div className="mt-6">
-              <div className="bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(claimedVouchers / totalVouchers) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-sm text-gray-600 mt-2 text-center">
-                {Math.round((claimedVouchers / totalVouchers) * 100)}% of vouchers fully utilized
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+
+    )
+        ;
 };
 
 export default Dashboard;

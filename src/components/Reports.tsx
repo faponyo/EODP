@@ -1,420 +1,637 @@
-import React, { useState } from 'react';
-import { BarChart3, Download, Calendar, Users, TicketIcon, TrendingUp } from 'lucide-react';
-import { Event, Attendee, Voucher } from '../types';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Download} from 'lucide-react';
+import {PaginationProps} from '../types';
+import {usePagination} from '../hooks/usePagination';
+import eventService from "../services/Events.ts";
+import checkInService from "../services/CheckIn.ts";
+import reportsService from "../services/Report.ts";
 
-interface ReportsProps {
-  events: Event[];
-  attendees: Attendee[];
-  vouchers: Voucher[];
-}
+import EPagination from "../common/EPagination.tsx";
+import OverlayLoader from "./OverlayLoader.tsx";
+import {showError, showInfo} from "../common/Toaster.ts";
+import {useAuthContext} from "../common/useAuthContext.tsx";
+import {PERMISSIONS} from "../common/constants.ts";
 
-const Reports: React.FC<ReportsProps> = ({ events, attendees, vouchers }) => {
-  const [selectedReport, setSelectedReport] = useState('overview');
-  const [selectedEvent, setSelectedEvent] = useState('all');
 
-  // Filter data based on selected event
-  const filteredAttendees = selectedEvent === 'all' 
-    ? attendees 
-    : attendees.filter(a => a.eventId === selectedEvent);
-  
-  const filteredVouchers = selectedEvent === 'all' 
-    ? vouchers 
-    : vouchers.filter(v => v.eventId === selectedEvent);
+const Reports: React.FC = () => {
+    const [selectedReport, setSelectedReport] = useState('overview');
+    const [selectedEvent, setSelectedEvent] = useState('');
+    const [events, setEvents] = useState<Record[]>([]);
+    const [attendees, setAttendees] = useState<Record[]>([]);
+    const [vouchers, setVouchers] = useState<Record[]>([]);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(5);
+    const {hasPermission} = useAuthContext();
 
-  // Calculate statistics
-  const stats = {
-    totalEvents: events.length,
-    totalAttendees: filteredAttendees.length,
-    totalVouchers: filteredVouchers.length,
-    fullyClaimedVouchers: filteredVouchers.filter(v => v.isFullyClaimed).length,
-    totalSoftDrinksClaimed: filteredVouchers.reduce((sum, v) => sum + v.softDrinks.claimed, 0),
-    totalHardDrinksClaimed: filteredVouchers.reduce((sum, v) => sum + v.hardDrinks.claimed, 0),
-    totalDrinksClaimed: filteredVouchers.reduce((sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 0),
-    maxPossibleDrinks: filteredVouchers.length * 4, // 2 soft + 2 hard per voucher
-  };
+    const [loadingData, setLoadingData] = useState<boolean>(false);
+    const [pagination, setPagination] = useState<PaginationProps>({
+        number: 1,
+        size: 5,
+        totalElements: 0,
+        totalPages: 0,
+        items: 0
 
-  // Event breakdown
-  const eventBreakdown = events.map(event => {
-    const eventAttendees = attendees.filter(a => a.eventId === event.id);
-    const eventVouchers = vouchers.filter(v => v.eventId === event.id);
-    const claimedDrinks = eventVouchers.reduce((sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 0);
-    
-    return {
-      event,
-      attendeeCount: eventAttendees.length,
-      voucherCount: eventVouchers.length,
-      claimedDrinks,
-      utilizationRate: eventVouchers.length > 0 ? (claimedDrinks / (eventVouchers.length * 4)) * 100 : 0,
+    });
+    const [downloadData, setDownloadData] = useState<boolean>(false)
+
+
+    const fetchEventWithVoucherData = async () => {
+
+        setEvents([])
+
+        await eventService.getEventsWithVouchers(
+
+        ).then(
+            data => {
+
+                setEvents(data)
+
+
+            }
+        ).catch(error => {
+            console.log(error)
+
+
+        });
+    }
+
+
+    const fetchEventsWithAttendees = async () => {
+        setEvents([])
+
+        await eventService.getEventsWithAttendees().then(
+            data => {
+                setEvents(data)
+            }
+        ).catch(error => {
+            console.log(error)
+
+        });
+    }
+
+
+    useEffect(() => {
+
+        setEvents([])
+        if (selectedReport === 'attendees') {
+            fetchEventsWithAttendees()
+        } else if (selectedReport === 'vouchers') {
+            fetchEventWithVoucherData()
+        }
+
+    }, [selectedReport]);
+
+
+    useEffect(() => {
+        setAttendees([])
+        setVouchers([]);
+        if ((selectedReport === 'attendees' || selectedReport === 'vouchers') && !(selectedEvent == undefined || selectedEvent === '')) {
+            if (selectedReport === 'attendees') {
+
+                fetchAttendeeData(currentPage, pageSize, selectedEvent, undefined, undefined)
+            } else if (selectedReport === 'vouchers') {
+                fetchVoucherData(currentPage, pageSize, selectedEvent)
+            }
+        }
+
+    }, [selectedReport, selectedEvent, currentPage, pageSize]);
+
+    const updateVoucherData = (content: never[], page: number, size: number, totalPages: number, totalElements: number,) => {
+        setVouchers(content)
+        setPagination({
+            number: page,
+            size: size,
+            totalElements: totalElements,
+            totalPages: totalPages,
+
+        })
+    }
+
+    const fetchVoucherData = async (page: number, pageSize: number, eventId: never) => {
+        setLoadingData(true)
+        setCurrentPage(page)
+
+
+        await checkInService.getVouchersPaginated(page, pageSize, eventId, undefined, undefined).then(
+            data => {
+                const {content, page: {number, size, totalPages, totalElements}} = data
+                updateVoucherData(content, page, size, totalPages, totalElements)
+
+
+                setLoadingData(false)
+
+
+            }
+        ).catch(error => {
+            console.log(error)
+            setLoadingData(false)
+
+
+        });
+    }
+
+
+    const fetchAttendeeData = async (page: number, pageSize: number, eventId: string, selectedFilterBy, filterValue) => {
+        setLoadingData(true)
+
+        setCurrentPage(page)
+        await checkInService.getAttendeesPaginated(page, pageSize, eventId, selectedFilterBy, filterValue).then(
+            data => {
+                const {content, page: {number, size, totalPages, totalElements}} = data
+                setAttendees(content)
+                setPagination({
+                    number: currentPage,
+                    size: pageSize,
+                    totalElements: totalElements,
+                    totalPages: totalPages,
+                    items: size
+
+                })
+                setLoadingData(false)
+            }
+        ).catch(error => {
+            console.log(error)
+            setLoadingData(false)
+
+
+        });
+    }
+
+
+    // Pagination for large datasets
+    const paginations = usePagination(100);
+
+    // Filter data based on selected event
+    const filteredAttendees = selectedEvent === 'all'
+        ? attendees
+        : attendees.filter(a => a.eventId === selectedEvent);
+
+    const filteredVouchers = selectedEvent === 'all'
+        ? vouchers
+        : vouchers.filter(v => v.eventId === selectedEvent);
+
+    // Calculate statistics with memoization for performance
+    const stats = useMemo(() => {
+        const totalSoftDrinksClaimed = filteredVouchers.reduce((sum, v) => sum + v.softDrinks.claimed, 0);
+        const totalHardDrinksClaimed = filteredVouchers.reduce((sum, v) => sum + v.hardDrinks.claimed, 0);
+        const totalDrinksClaimed = totalSoftDrinksClaimed + totalHardDrinksClaimed;
+        const maxPossibleDrinks = filteredVouchers.length * 4;
+
+        return {
+            totalEvents: events.length,
+            totalAttendees: filteredAttendees.length,
+            totalVouchers: filteredVouchers.length,
+            fullyClaimedVouchers: filteredVouchers.filter(v => v.isFullyClaimed).length,
+            totalSoftDrinksClaimed,
+            totalHardDrinksClaimed,
+            totalDrinksClaimed,
+            maxPossibleDrinks,
+        };
+    }, [events.length, filteredAttendees.length, filteredVouchers]);
+
+    // Event breakdown with memoization
+    const eventBreakdown = useMemo(() => {
+        return events.map(event => {
+            const eventAttendees = attendees.filter(a => a.eventId === event.id);
+            const eventVouchers = vouchers.filter(v => v.eventId === event.id);
+            const claimedDrinks = eventVouchers.reduce((sum, v) => sum + v.softDrinks.claimed + v.hardDrinks.claimed, 0);
+
+            return {
+                event,
+                attendeeCount: eventAttendees.length,
+                voucherCount: eventVouchers.length,
+                claimedDrinks,
+                utilizationRate: eventVouchers.length > 0 ? (claimedDrinks / (eventVouchers.length * 4)) * 100 : 0,
+            };
+        });
+    }, [events, attendees, vouchers]);
+
+    // Department breakdown with memoization
+    const departmentBreakdown = useMemo(() => {
+        return filteredAttendees.reduce((acc, attendee) => {
+            const dept = attendee.department || 'Not Specified';
+            if (!acc[dept]) {
+                acc[dept] = {count: 0, vouchers: 0, drinks: 0};
+            }
+            acc[dept].count++;
+
+            const attendeeVoucher = vouchers.find(v => v.attendeeId === attendee.id);
+            if (attendeeVoucher) {
+                acc[dept].vouchers++;
+                acc[dept].drinks += attendeeVoucher.softDrinks.claimed + attendeeVoucher.hardDrinks.claimed;
+            }
+
+            return acc;
+        }, {} as Record<string, { count: number; vouchers: number; drinks: number }>);
+    }, [filteredAttendees, vouchers]);
+
+    // Paginated department data
+    const departmentEntries = Object.entries(departmentBreakdown);
+    const {paginatedData: paginatedDepartments, pagination: deptPaginationInfo} =
+        paginations.paginateData(departmentEntries);
+
+    // const getVoucherColor = (vouchers: number) => {
+    //     if (vouchers >= 20) return 'text-green-600 bg-green-50';
+    //     if (vouchers >= 10) return 'text-yellow-600 bg-yellow-50';
+    //     return 'text-red-600 bg-red-50';
+    // };
+
+    const exportToCSV = () => {
+        const headers = ['PF Number', 'Name', 'Department', 'Check In', 'Vouchers'];
+        const csvContent = [
+            headers.join(','),
+            ...sampleData.map(employee => [
+                employee.pfNumber,
+                `"${employee.name}"`,
+                employee.department,
+                employee.checkIn,
+                employee.vouchers
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `employees_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
-  });
 
-  // Department breakdown
-  const departmentBreakdown = filteredAttendees.reduce((acc, attendee) => {
-    const dept = attendee.department || 'Not Specified';
-    if (!acc[dept]) {
-      acc[dept] = { count: 0, vouchers: 0, drinks: 0 };
+    const exportToCsv = (data: any[], filename: string) => {
+        if (data.length === 0) {
+            showInfo('No data to export');
+            return;
+        }
+
+        const csvContent = "data:text/csv;charset=utf-8," +
+            Object.keys(data[0]).join(",") + "\n" +
+            data.map(row => Object.values(row).map(val =>
+                typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+            ).join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const exportAttendeeList = () => {
+        const data = filteredAttendees.map(attendee => {
+            const event = events.find(e => e.id === attendee.eventId);
+            const voucher = vouchers.find(v => v.attendeeId === attendee.id);
+            return {
+                Name: attendee.name,
+                Email: attendee.email,
+                Phone: attendee.phone || '',
+                Department: attendee.department || '',
+                Event: event?.name || '',
+                VoucherNumber: voucher?.voucherNumber || '',
+                SoftDrinksClaimed: voucher?.softDrinks.claimed || 0,
+                HardDrinksClaimed: voucher?.hardDrinks.claimed || 0,
+                RegisteredAt: new Date(attendee.registeredAt).toLocaleString(),
+            };
+        });
+
+        exportToCsv(data, `attendees_report_${new Date().toISOString().split('T')[0]}.csv`);
+    };
+    const getVoucherNumbers = (voucherId: Employee['voucherId']) => {
+        return voucherId.map(voucher => voucher.voucherNumber).join(', ');
+    };
+
+    const getClaimedAt = (voucherClaims: { id: number, claimedAt: never }[]) => {
+        return voucherClaims.map(voucher => new Date(voucher.claimedAt).toLocaleDateString() + ' ' + new Date(voucher.claimedAt).toLocaleTimeString()).join(', ');
+    };
+
+    const getVoucherColor = (voucherId: Employee['voucherId']) => {
+        const voucherCount = voucherId.length;
+        if (voucherCount >= 3) return 'text-green-600 bg-green-50';
+        if (voucherCount >= 2) return 'text-yellow-600 bg-yellow-50';
+        return 'text-blue-600 bg-blue-50';
+    };
+
+    const exportData = async () => {
+        setDownloadData(true)
+        const event = events.find((ev) => ev.id == selectedEvent)
+
+
+        await reportsService
+            .exportData(selectedEvent, selectedReport)
+            .then((response) => {
+                if (response instanceof ArrayBuffer) {
+                    const fileName = `${event?.name}_${selectedReport}.xlsx`
+
+                    const arrayBuffer = response
+                    const blob = new Blob([arrayBuffer], {
+                        type: 'application/vnd.ms-excel', //  MIME type
+                    })
+
+                    // Create a link element to download the file
+                    const url: string = URL.createObjectURL(blob)
+                    const link: HTMLAnchorElement = document.createElement('a')
+                    link.href = url
+
+                    // Optional: Add a filename for the downloaded file
+                    link.download = fileName
+
+                    // Programmatically click the link to trigger download
+                    document.body.appendChild(link)
+                    link.click()
+
+                    // Cleanup: Remove link element
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+                } else {
+                    const jsonString = new TextDecoder().decode(new Uint8Array(response.data));
+                    const {message} = JSON.parse(jsonString);
+                    showError(message || 'Unable download file')
+
+                }
+
+                setDownloadData(false)
+            })
+            .catch((error) => {
+                setDownloadData(false)
+
+                showError(error || 'Unable download file')
+            })
+
     }
-    acc[dept].count++;
-    
-    const attendeeVoucher = vouchers.find(v => v.attendeeId === attendee.id);
-    if (attendeeVoucher) {
-      acc[dept].vouchers++;
-      acc[dept].drinks += attendeeVoucher.softDrinks.claimed + attendeeVoucher.hardDrinks.claimed;
-    }
-    
-    return acc;
-  }, {} as Record<string, { count: number; vouchers: number; drinks: number }>);
 
-  const exportToCsv = (data: any[], filename: string) => {
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      Object.keys(data[0]).join(",") + "\n" +
-      data.map(row => Object.values(row).join(",")).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
-  const exportAttendeeList = () => {
-    const data = filteredAttendees.map(attendee => {
-      const event = events.find(e => e.id === attendee.eventId);
-      const voucher = vouchers.find(v => v.attendeeId === attendee.id);
-      return {
-        Name: attendee.name,
-        Email: attendee.email,
-        Phone: attendee.phone || '',
-        Department: attendee.department || '',
-        Event: event?.name || '',
-        VoucherNumber: voucher?.voucherNumber || '',
-        SoftDrinksClaimed: voucher?.softDrinks.claimed || 0,
-        HardDrinksClaimed: voucher?.hardDrinks.claimed || 0,
-        RegisteredAt: new Date(attendee.registeredAt).toLocaleString(),
-      };
-    });
-    
-    exportToCsv(data, `attendees_report_${new Date().toISOString().split('T')[0]}.csv`);
-  };
+    return (
+        <div className="space-y-6">
+            <div>
+                {/*<h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>*/}
+                <p className="text-gray-600 mt-1">View detailed reports and export data efficiently</p>
+            </div>
 
-  const exportVoucherUsage = () => {
-    const data = filteredVouchers.map(voucher => {
-      const attendee = attendees.find(a => a.id === voucher.attendeeId);
-      const event = events.find(e => e.id === voucher.eventId);
-      return {
-        VoucherNumber: voucher.voucherNumber,
-        AttendeeName: attendee?.name || '',
-        AttendeeEmail: attendee?.email || '',
-        Event: event?.name || '',
-        SoftDrinksTotal: voucher.softDrinks.total,
-        SoftDrinksClaimed: voucher.softDrinks.claimed,
-        HardDrinksTotal: voucher.hardDrinks.total,
-        HardDrinksClaimed: voucher.hardDrinks.claimed,
-        IsFullyClaimed: voucher.isFullyClaimed,
-        CreatedAt: new Date(voucher.createdAt).toLocaleString(),
-      };
-    });
-    
-    exportToCsv(data, `voucher_usage_report_${new Date().toISOString().split('T')[0]}.csv`);
-  };
+            {hasPermission(PERMISSIONS.AR) && (<>
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-        <p className="text-gray-600 mt-1">View detailed reports and export data</p>
-      </div>
+                {/* Report Configuration */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                            <select
+                                value={selectedReport}
+                                onChange={(e) => setSelectedReport(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                            >
+                                <option value="">Select Report Type</option>
+                                <option value="attendees">Attendee Report</option>
+                                <option value="vouchers">Voucher Usage Report</option>
 
-      {/* Report Type Selection */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-            <select
-              value={selectedReport}
-              onChange={(e) => setSelectedReport(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="overview">Overview Report</option>
-              <option value="attendees">Attendee Report</option>
-              <option value="vouchers">Voucher Usage Report</option>
-              <option value="events">Event Breakdown</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Event</label>
-            <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Events</option>
-              {events.map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                            </select>
+                        </div>
+                        {events.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Event</label>
+                                <select
+                                    value={selectedEvent}
+                                    onChange={(e) => setSelectedEvent(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                                >
+                                    <option value="">Select Event</option>
+                                    {events.map((event) => (
+                                        <option key={event.id} value={event.id}>
+                                            {event.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+
+                {/* Department Analysis with Pagination */}
+                {selectedReport === 'attendees' && (
+                    <div className="bg-white rounded-xl shadow-sm  ">
+                        <div className="bg-white rounded-xl shadow-lg">
+                            {/* Header */}
+                            {attendees.length > 0 && (
+                                <>
+                                    <div className="px-6 py-4">
+                                        <div className="flex justify-end">
+                                            <OverlayLoader
+                                                action={"Exporting " + selectedReport + " report for " + selectedEvent}
+                                                loading={downloadData}/>
+                                            <button
+                                                onClick={() => exportData()}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-medium text-sm whitespace-nowrap"
+                                            >
+                                                <Download className="w-4 h-4"/>
+                                                Export
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Pagination - Top */}
+
+                                    <div className="px-6 py-4 border-b  bg-gray-50">
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div className="text-sm text-gray-600">
+                                                Showing <span
+                                                className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+                                                <span
+                                                    className="font-medium">{(currentPage * pageSize) > pagination.totalElements ? pagination.totalElements : (currentPage * pageSize)}</span> of{' '}
+                                                <span className="font-medium">{pagination.totalElements}</span> results
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+
+                                                <EPagination currentPage={currentPage} setPageSize={setPageSize}
+                                                             pageCount={pagination.totalPages}
+                                                             handlePageChange={function (page: number): void {
+
+                                                                 setCurrentPage(page)
+
+                                                             }} pagesize={pageSize}/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className={"divide-y divide-gray-200 relative  border rounded-lg bg-gray-5"}>
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    PF Number
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Name
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Department
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Check In
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Vouchers
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {attendees.map((employee, index) => (
+                                                <tr
+                                                    key={employee.id}
+                                                    className="hover:bg-gray-50 transition-colors duration-150 ease-in-out"
+                                                >
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-gray-900">
+                      {employee.pfNumber}
+                    </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {employee.name}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      {employee.department}
+                    </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {`${new Date(employee.registeredAt).toLocaleDateString()} ${new Date(employee.registeredAt).toLocaleTimeString()}`}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                        className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getVoucherColor(employee.voucherId)}`}>
+                      {getVoucherNumbers(employee.voucherId)}
+                    </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>)}
+                        </div>
+                    </div>
+                )}
+
+                {/* Department Analysis with Pagination */}
+                {selectedReport === 'vouchers' && (
+                    <div className="w-full max-w-7xl mx-auto p-6">
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+                            {vouchers.length > 0 && (<>
+                                    {/* Header */}
+                                    <div className="px-6 py-4 border-b border-gray-200">
+                                        <div className="flex justify-end">
+                                            <OverlayLoader
+                                                action={"Exporting " + selectedReport + " report for " + selectedEvent}
+                                                loading={downloadData}/>
+                                            <button
+                                                onClick={() => exportData()}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 font-medium text-sm whitespace-nowrap"
+                                            >
+                                                <Download className="w-4 h-4"/>
+                                                Export
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Pagination - Top */}
+                                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div className="text-sm text-gray-600">
+                                                Showing <span
+                                                className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+                                                <span
+                                                    className="font-medium">{(currentPage * pageSize) > pagination.totalElements ? pagination.totalElements : (currentPage * pageSize)}</span> of{' '}
+                                                <span className="font-medium">{pagination.totalElements}</span> results
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+
+                                                <EPagination currentPage={currentPage} setPageSize={setPageSize}
+                                                             pageCount={pagination.totalPages}
+                                                             handlePageChange={function (page: number): void {
+
+                                                                 setCurrentPage(page)
+
+                                                             }} pagesize={pageSize}/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Table */}
+                                    <div className={"divide-y divide-gray-200 relative  border rounded-lg bg-gray-5"}>
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Voucher
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Category
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Claimed
+                                                </th>
+
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    Value
+                                                </th>
+                                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                    ClaimedAt
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {vouchers.map((vouch, index) => (
+                                                <tr
+                                                    key={vouch.id}
+                                                    className="hover:bg-gray-50 transition-colors duration-150 ease-in-out"
+                                                >
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-gray-900">
+                      {vouch.voucherNumber}
+                    </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {vouch.voucherCategory.name}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {`${vouch.claimedNumber} / ${vouch.voucherCategory.numberOfItems}`}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {vouch.voucherCategory.value?.toLocaleString()}
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {vouch?.voucherClaims.length > 0 ? getClaimedAt(vouch?.voucherClaims) : ''}
+                                                    </td>
+
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </>)}
+
         </div>
-      </div>
-
-      {/* Overview Stats */}
-      {selectedReport === 'overview' && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalEvents}</p>
-                  <p className="text-sm text-gray-600">Total Events</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <Users className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalAttendees}</p>
-                  <p className="text-sm text-gray-600">Total Attendees</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <TicketIcon className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalVouchers}</p>
-                  <p className="text-sm text-gray-600">Vouchers Issued</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalDrinksClaimed}</p>
-                  <p className="text-sm text-gray-600">Drinks Claimed</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Utilization Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Voucher Utilization</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {Math.round((stats.totalSoftDrinksClaimed / (stats.totalVouchers * 2)) * 100)}%
-                </div>
-                <div className="text-sm text-gray-600">Soft Drinks Used</div>
-                <div className="mt-2 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(stats.totalSoftDrinksClaimed / (stats.totalVouchers * 2)) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="text-4xl font-bold text-orange-600 mb-2">
-                  {Math.round((stats.totalHardDrinksClaimed / (stats.totalVouchers * 2)) * 100)}%
-                </div>
-                <div className="text-sm text-gray-600">Hard Drinks Used</div>
-                <div className="mt-2 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(stats.totalHardDrinksClaimed / (stats.totalVouchers * 2)) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  {Math.round((stats.totalDrinksClaimed / stats.maxPossibleDrinks) * 100)}%
-                </div>
-                <div className="text-sm text-gray-600">Overall Utilization</div>
-                <div className="mt-2 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(stats.totalDrinksClaimed / stats.maxPossibleDrinks) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Department Breakdown */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Department Breakdown</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Attendees
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Vouchers
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Drinks Claimed
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Avg per Person
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {Object.entries(departmentBreakdown).map(([dept, data]) => (
-                    <tr key={dept} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {dept}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.count}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.vouchers}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.drinks}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.count > 0 ? (data.drinks / data.count).toFixed(1) : '0.0'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Event Breakdown Report */}
-      {selectedReport === 'events' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Event Performance</h3>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="space-y-6">
-              {eventBreakdown.map((eventData) => (
-                <div key={eventData.event.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <div>
-                      <h4 className="text-lg font-medium text-gray-900">{eventData.event.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {new Date(eventData.event.date).toLocaleDateString()} • {eventData.event.location}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600">Utilization Rate</div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {eventData.utilizationRate.toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-blue-600">{eventData.attendeeCount}</div>
-                      <div className="text-sm text-blue-800">Attendees</div>
-                      <div className="text-xs text-blue-600">
-                        {eventData.attendeeCount} / {eventData.event.maxAttendees} capacity
-                      </div>
-                    </div>
-                    
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-green-600">{eventData.voucherCount}</div>
-                      <div className="text-sm text-green-800">Vouchers Issued</div>
-                      <div className="text-xs text-green-600">
-                        {eventData.voucherCount * 4} total drinks available
-                      </div>
-                    </div>
-                    
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <div className="text-2xl font-bold text-orange-600">{eventData.claimedDrinks}</div>
-                      <div className="text-sm text-orange-800">Drinks Claimed</div>
-                      <div className="text-xs text-orange-600">
-                        {eventData.voucherCount > 0 ? (eventData.claimedDrinks / eventData.voucherCount).toFixed(1) : '0'} per person
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <div className="bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${eventData.utilizationRate}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Buttons */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Export Data</h3>
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <button
-            onClick={exportAttendeeList}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export Attendee List</span>
-          </button>
-          
-          <button
-            onClick={exportVoucherUsage}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-          >
-            <Download className="h-4 w-4" />
-            <span>Export Voucher Usage</span>
-          </button>
-        </div>
-        
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-2">Export Information:</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            <li>• Attendee List includes personal details, event registration, and voucher information</li>
-            <li>• Voucher Usage report shows detailed claim history for each voucher</li>
-            <li>• All exports are in CSV format compatible with Excel and Google Sheets</li>
-            <li>• Data is filtered based on your current event selection</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Reports;

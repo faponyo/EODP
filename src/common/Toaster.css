@@ -1,0 +1,32 @@
+/* Smaller close button */
+.toastify__close-button {
+    font-size: 0.2rem !important; /* Smaller close button */
+    opacity: 0.6 !important;      /* Reduce visibility for a softer look */
+  }
+
+/* Z-index for the toast container */
+.Toastify__toast-container {
+  z-index: 9999 !important;
+}
+  
+  /* Horizontal message display */
+  .toastify__toast-body {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* When the message is too long, wrap it */
+  .toastify__toast-body.long-message {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+  
+  /* General toast body styling for consistent padding */
+  .toastify__toast {
+    padding: 10px 20px !important; /* Adjust padding for cleaner look */
+  }
+  

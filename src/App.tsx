@@ -1,281 +1,171 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from './hooks/useAuth';
-import { Event, Attendee, Voucher } from './types';
-import { createVoucher } from './utils/voucher';
+import React, {useEffect, useState} from 'react';
+import {Navigate, Route, Routes, useLocation} from 'react-router-dom';
+
+// Components
 import AuthForm from './components/AuthForm';
-import Layout from './components/Layout';
+import PasswordResetPage from './components/PasswordResetPage';
 import Dashboard from './components/Dashboard';
 import EventManagement from './components/EventManagement';
 import AttendeeManagement from './components/AttendeeManagement';
 import VoucherManagement from './components/VoucherManagement';
 import Reports from './components/Reports';
+import UserManagement from './components/UserManagement';
+import SubsidiaryManagement from './components/SubsidiaryManagement';
+import EventSelector from './components/EventSelector';
+import NoAccessPage from './components/NoAccessPage';
+import AccountDisabledPage from './components/AccountDisabledPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from "./components/Layout.tsx";
+import {useAuthContext} from "./common/useAuthContext.tsx";
+import {useEventContext} from "./common/useEventContext.tsx";
+import PublicRoute from "./components/PublicRoute.tsx";
+
+function AppContent() {
+    const location = useLocation();
+
+    const {user, logout, assignedEvents} = useAuthContext();
+    const [currentPage, setCurrentPage] = useState(
+        'dashboard');
+
+    const {preSelectedEvent, setPreSelectedEvent} = useEventContext();
+
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+
+    // const navigate = useNavigate();
+    // useEffect(() => {
+    //     setNavigate(navigate);
+    // }, [navigate]);
+
+    // useEffect(() => {
+    //     localStorage.setItem('currentPage', currentPage);
+    // }, [currentPage]);
+
+    // useEffect(() => {
+    //     setCurrentPage(location.pathname);
+    // }, [location.pathname]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
+
+    // Show event selector for external users with multiple events
+    if ((user?.role?.toUpperCase() === 'PARTNER' || user?.role?.toUpperCase() === 'CLERK') && !preSelectedEvent) {
+        return (
+            <EventSelector
+                events={assignedEvents || []}
+                onEventSelect={setPreSelectedEvent}
+                onBackToLogin={logout}
+            />
+        );
+    }
+
+    // Render main application layout with navigation
+    return (
+
+
+        <Layout
+            user={user}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onLogout={logout}
+            selectedEvent={preSelectedEvent}
+
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+
+            children={<Routes>
+                <Route path="/dashboard" element={
+                    <ProtectedRoute
+                    >
+
+                        <Dashboard/>
+                    </ProtectedRoute>
+                }/>
+
+                <Route path="/events" element={
+                    <ProtectedRoute
+                    >
+
+                        <EventManagement/>
+                    </ProtectedRoute>
+                }/>
+                <Route path="/attendees" element={
+                    <ProtectedRoute
+                    >
+                        <AttendeeManagement
+
+                        />
+                    </ProtectedRoute>
+                }/>
+                <Route path="/vouchers" element={
+                    <ProtectedRoute
+                    >
+                        <VoucherManagement
+                        />
+                    </ProtectedRoute>
+                }/>
+                <Route path="/reports" element={
+                    <ProtectedRoute
+                    >
+                        <Reports/>
+                    </ProtectedRoute>
+                }/>
+                <Route path="/users" element={
+                    <ProtectedRoute>
+                        <UserManagement
+
+                        />
+                    </ProtectedRoute>
+                }/>
+                <Route path="/subsidiaries" element={
+                    <ProtectedRoute>
+                        <SubsidiaryManagement
+                        />
+                    </ProtectedRoute>
+                }/>
+                <Route path="*" element={<Navigate to={`${location.state?.from?.pathname || '/dashboard'}`} replace/>}/>
+            </Routes>}
+        />
+
+
+    );
+}
 
 function App() {
-  const { isAuthenticated, user } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  
-  // State management
-  const [events, setEvents] = useState<Event[]>([]);
-  const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+    const location = useLocation();
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const storedEvents = localStorage.getItem('events');
-    const storedAttendees = localStorage.getItem('attendees');
-    const storedVouchers = localStorage.getItem('vouchers');
+    return (
+        <Routes>
+            <Route path="/" element={
+                <PublicRoute redirectTo={`${location.state?.from?.pathname || '/dashboard'}`}>
+                    <AuthForm/>
+                </PublicRoute>
+            }/>
+            <Route path="/login" element={
+                <PublicRoute redirectTo={`${location.state?.from?.pathname || '/dashboard'}`}>
+                    <AuthForm/>
+                </PublicRoute>
+            }/>
+            <Route path="/reset-password" element={
+                <ProtectedRoute>
+                    <PasswordResetPage/>
+                </ProtectedRoute>
+            }/>
+            <Route path="/no-access" element={
+                <ProtectedRoute>
+                    <NoAccessPage/>
+                </ProtectedRoute>
+            }/>
+            <Route path="/account-disabled" element={<AccountDisabledPage/>}/>
+            <Route path="/*" element={
+                <ProtectedRoute>
+                    <AppContent/>
+                </ProtectedRoute>
+            }/>
 
-    if (storedEvents) {
-      setEvents(JSON.parse(storedEvents));
-    }
-    if (storedAttendees) {
-      setAttendees(JSON.parse(storedAttendees));
-    }
-    if (storedVouchers) {
-      setVouchers(JSON.parse(storedVouchers));
-    }
-
-    // Initialize demo data if none exists
-    initializeDemoData();
-  }, []);
-
-  // Save data to localStorage whenever state changes
-  useEffect(() => {
-    localStorage.setItem('events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('attendees', JSON.stringify(attendees));
-  }, [attendees]);
-
-  useEffect(() => {
-    localStorage.setItem('vouchers', JSON.stringify(vouchers));
-  }, [vouchers]);
-
-  const initializeDemoData = () => {
-    // Initialize demo users if they don't exist
-    const storedUsers = localStorage.getItem('users');
-    if (!storedUsers) {
-      const demoUsers = [
-        {
-          id: '1',
-          email: 'admin@company.com',
-          name: 'Admin User',
-          role: 'admin',
-        },
-        {
-          id: '2',
-          email: 'user@company.com',
-          name: 'Regular User',
-          role: 'user',
-        },
-      ];
-      localStorage.setItem('users', JSON.stringify(demoUsers));
-    }
-
-    // Initialize demo events if none exist
-    const storedEvents = localStorage.getItem('events');
-    if (!storedEvents || JSON.parse(storedEvents).length === 0) {
-      const demoEvents: Event[] = [
-        {
-          id: '1',
-          name: 'Annual Christmas Party 2024',
-          date: '2024-12-20',
-          location: 'Grand Ballroom, Plaza Hotel',
-          description: 'Join us for our annual Christmas celebration with dinner, drinks, and entertainment.',
-          maxAttendees: 150,
-          createdAt: new Date().toISOString(),
-          createdBy: '1',
-        },
-        {
-          id: '2',
-          name: 'New Year Celebration',
-          date: '2024-12-31',
-          location: 'Rooftop Terrace, Company HQ',
-          description: 'Ring in the new year with colleagues and friends at our rooftop party.',
-          maxAttendees: 100,
-          createdAt: new Date().toISOString(),
-          createdBy: '1',
-        },
-      ];
-
-      const demoAttendees: Attendee[] = [
-        {
-          id: '1',
-          eventId: '1',
-          name: 'John Smith',
-          email: 'john.smith@company.com',
-          phone: '+1 (555) 123-4567',
-          department: 'Marketing',
-          registeredAt: new Date(Date.now() - 86400000).toISOString(),
-          voucherId: 'voucher-1',
-        },
-        {
-          id: '2',
-          eventId: '1',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@company.com',
-          phone: '+1 (555) 234-5678',
-          department: 'HR',
-          registeredAt: new Date(Date.now() - 172800000).toISOString(),
-          voucherId: 'voucher-2',
-        },
-        {
-          id: '3',
-          eventId: '2',
-          name: 'Mike Davis',
-          email: 'mike.davis@company.com',
-          phone: '+1 (555) 345-6789',
-          department: 'Engineering',
-          registeredAt: new Date(Date.now() - 259200000).toISOString(),
-          voucherId: 'voucher-3',
-        },
-      ];
-
-      const demoVouchers: Voucher[] = [
-        {
-          id: 'voucher-1',
-          voucherNumber: 'VP202400001',
-          attendeeId: '1',
-          eventId: '1',
-          softDrinks: { total: 2, claimed: 1 },
-          hardDrinks: { total: 2, claimed: 0 },
-          isFullyClaimed: false,
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: 'voucher-2',
-          voucherNumber: 'VP202400002',
-          attendeeId: '2',
-          eventId: '1',
-          softDrinks: { total: 2, claimed: 2 },
-          hardDrinks: { total: 2, claimed: 2 },
-          isFullyClaimed: true,
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-        },
-        {
-          id: 'voucher-3',
-          voucherNumber: 'VP202400003',
-          attendeeId: '3',
-          eventId: '2',
-          softDrinks: { total: 2, claimed: 0 },
-          hardDrinks: { total: 2, claimed: 1 },
-          isFullyClaimed: false,
-          createdAt: new Date(Date.now() - 259200000).toISOString(),
-        },
-      ];
-
-      setEvents(demoEvents);
-      setAttendees(demoAttendees);
-      setVouchers(demoVouchers);
-    }
-  };
-
-  // Event handlers
-  const handleCreateEvent = (eventData: Omit<Event, 'id' | 'createdAt' | 'createdBy'>) => {
-    const newEvent: Event = {
-      ...eventData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      createdBy: user?.id || '1',
-    };
-    setEvents([...events, newEvent]);
-  };
-
-  const handleUpdateEvent = (id: string, eventData: Partial<Event>) => {
-    setEvents(events.map(event => 
-      event.id === id ? { ...event, ...eventData } : event
-    ));
-  };
-
-  const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter(event => event.id !== id));
-    // Also remove related attendees and vouchers
-    const relatedAttendees = attendees.filter(attendee => attendee.eventId === id);
-    const attendeeIds = relatedAttendees.map(a => a.id);
-    
-    setAttendees(attendees.filter(attendee => attendee.eventId !== id));
-    setVouchers(vouchers.filter(voucher => !attendeeIds.includes(voucher.attendeeId)));
-  };
-
-  const handleRegisterAttendee = (attendeeData: Omit<Attendee, 'id' | 'registeredAt' | 'voucherId'>) => {
-    const attendeeId = Date.now().toString();
-    const voucherId = `voucher-${attendeeId}`;
-    
-    const newAttendee: Attendee = {
-      ...attendeeData,
-      id: attendeeId,
-      registeredAt: new Date().toISOString(),
-      voucherId,
-    };
-
-    const newVoucher = createVoucher(attendeeId, attendeeData.eventId);
-    newVoucher.id = voucherId;
-
-    setAttendees([...attendees, newAttendee]);
-    setVouchers([...vouchers, newVoucher]);
-  };
-
-  const handleClaimDrink = (voucherId: string, drinkType: 'soft' | 'hard') => {
-    setVouchers(vouchers.map(voucher => {
-      if (voucher.id !== voucherId) return voucher;
-
-      const updatedVoucher = { ...voucher };
-      
-      if (drinkType === 'soft' && voucher.softDrinks.claimed < voucher.softDrinks.total) {
-        updatedVoucher.softDrinks.claimed += 1;
-      } else if (drinkType === 'hard' && voucher.hardDrinks.claimed < voucher.hardDrinks.total) {
-        updatedVoucher.hardDrinks.claimed += 1;
-      }
-
-      // Check if fully claimed
-      updatedVoucher.isFullyClaimed = 
-        updatedVoucher.softDrinks.claimed >= updatedVoucher.softDrinks.total &&
-        updatedVoucher.hardDrinks.claimed >= updatedVoucher.hardDrinks.total;
-
-      return updatedVoucher;
-    }));
-  };
-
-  if (!isAuthenticated) {
-    return <AuthForm />;
-  }
-
-  return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
-      {currentPage === 'dashboard' && (
-        <Dashboard events={events} attendees={attendees} vouchers={vouchers} />
-      )}
-      {currentPage === 'events' && (
-        <EventManagement
-          events={events}
-          attendees={attendees}
-          onCreateEvent={handleCreateEvent}
-          onUpdateEvent={handleUpdateEvent}
-          onDeleteEvent={handleDeleteEvent}
-        />
-      )}
-      {currentPage === 'attendees' && (
-        <AttendeeManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
-          onRegisterAttendee={handleRegisterAttendee}
-        />
-      )}
-      {currentPage === 'vouchers' && (
-        <VoucherManagement
-          events={events}
-          attendees={attendees}
-          vouchers={vouchers}
-          onClaimDrink={handleClaimDrink}
-        />
-      )}
-      {currentPage === 'reports' && (
-        <Reports events={events} attendees={attendees} vouchers={vouchers} />
-      )}
-    </Layout>
-  );
+        </Routes>
+    );
 }
 
 export default App;
