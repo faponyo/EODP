@@ -26,6 +26,10 @@ function subsidiaryService() {
             })
         },
 
+        getSubsidiaries: () => {
+            return HttpClient.get(API_URL + '/non-paginated')
+        },
+
         approveSubsidiary(data: { id: string; remarks: string; approved: boolean }) {
 
             return HttpClient.post(API_URL + "/approve",
@@ -53,7 +57,7 @@ function subsidiaryService() {
             );
         },
         getSubsidiarySubsidiaryPaginated(page: number, pageSize: number, subsidiaryId: number, filterBy: any, filterValue: any) {
-            return HttpClient.get(API_URL+'/employees/'+subsidiaryId, {
+            return HttpClient.get(API_URL + '/employees/' + subsidiaryId, {
                 params: buildQueryParams(page, pageSize, filterBy, filterValue)
             })
 

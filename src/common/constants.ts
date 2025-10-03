@@ -31,8 +31,24 @@ export const PERMISSIONS = {
     VSSU: 'VSSU',// View System Users
 
     // Reports
-    AR:'AR' // Access Reports
+    AR: 'AR' // Access Reports
 };
+
+
+export const formatDateTime = (dateString: string | number | Date) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-GB', {
+        timeZone: 'Africa/Nairobi',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+}
 
 
 // CME -Create  events

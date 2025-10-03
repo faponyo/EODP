@@ -8,7 +8,7 @@ import EPagination from "../common/EPagination.tsx";
 import {useEventContext} from "../common/useEventContext.tsx";
 import {showError, showSuccess} from "../common/Toaster.ts";
 import {useAuthContext} from "../common/useAuthContext.tsx";
-import {PERMISSIONS} from "../common/constants.ts";
+import {formatDateTime, PERMISSIONS} from "../common/constants.ts";
 import DataLoader from "./DataLoader.tsx";
 
 
@@ -162,7 +162,7 @@ const VoucherManagement: React.FC = () => {
             {
 
                 itemName: '',
-                itemCount: '0',
+                itemCount: (voucher.voucherCategory.numberOfItems - voucher.claimedNumber) || 0,
 
             }
         )
@@ -500,17 +500,23 @@ const VoucherManagement: React.FC = () => {
                                                     </div>
 
                                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-3">
+
                                                         <div>
                                                             <p className="font-medium text-gray-900 truncate">{voucher.attendee?.name}</p>
+                                                            { hasPermission(PERMISSIONS.VA) && (<>
                                                             <p className="text-sm text-gray-600 truncate">{voucher.attendee?.email}</p>
                                                             {voucher.attendee?.department && (
                                                                 <p className="text-sm text-gray-500">{voucher.attendee?.department}</p>
                                                             )}
+                                                                </>
+                                                        )}
                                                         </div>
+
+
                                                         <div>
                                                             <p className="text-sm text-gray-600 truncate">{voucher.attendee.eventId?.name}</p>
                                                             <p className="text-sm text-gray-500">
-                                                                Created: {new Date(voucher?.createdAt).toLocaleDateString()}
+                                                                Created: {formatDateTime(voucher?.createdAt)}
                                                             </p>
                                                         </div>
                                                     </div>

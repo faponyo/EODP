@@ -13,7 +13,7 @@ import {
     Search,
     UserPlus
 } from 'lucide-react';
-import {PERMISSIONS} from "../common/constants.ts";
+import {formatDateTime, PERMISSIONS} from "../common/constants.ts";
 
 import {PaginationProps, User, UserGroup} from '../types';
 import {useSearch} from '../hooks/useSearch';
@@ -24,6 +24,7 @@ import EPagination from "../common/EPagination.tsx";
 import eventService from "../services/Events.ts";
 import {showError, showInfo, showSuccess} from "../common/Toaster.ts";
 import {useAuthContext} from "../common/useAuthContext.tsx";
+import DataLoader from "./DataLoader.tsx";
 
 
 interface Record {
@@ -1286,7 +1287,7 @@ const UserManagement: React.FC = () => {
 
                 {/* Search and Filter */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Filter by</label>
                             <select
@@ -1294,9 +1295,9 @@ const UserManagement: React.FC = () => {
                                 onChange={(e) => setSelectedFilterBy(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
                             >
-                                <option value="">Select filter Parameter</option>
+                                <option value="">Select filter </option>
                                 <option value="username">Username</option>
-                                <option value="email">Email</option>
+                                {/*<option value="email">Email</option>*/}
 
                             </select>
                         </div>
@@ -1334,6 +1335,25 @@ const UserManagement: React.FC = () => {
                             </div>
 
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">.</label>
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                       fetchUserData(currentPage,pageSize,selectedFilterBy,filterValue)
+
+
+                                    }}
+                                    disabled={loadingData}
+                                    className="bg-coop-orange-400 text-white px-4 py-2 rounded-lg hover:bg-info-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                                >
+
+                                    <span>{'Reload'}</span>
+                                </button>
+                            </div>
+
+                        </div>
                     </div>
 
                     {(searchTerm || selectedFilterBy !== '') && (
@@ -1347,6 +1367,7 @@ const UserManagement: React.FC = () => {
                                     setSelectedFilterBy('');
                                     setFilterValue('');
                                     setCurrentPage(1);
+
 
                                 }}
                                 className="text-sm text-coop-600 hover:text-coop-700 font-medium"
@@ -1385,7 +1406,7 @@ const UserManagement: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="divide-y divide-gray-200">
+                    <div className="divide-y divide-gray-200 relative">
 
                         {!loadingData && records.length > 0 && hasPermission(PERMISSIONS.VSSU) ? (
                             records.map((userr) => (
@@ -1396,8 +1417,8 @@ const UserManagement: React.FC = () => {
                                                 <div className="flex items-center space-x-3 mb-2">
                                                     <h3 className="text-lg font-medium text-gray-900">{userr?.fullName}</h3>
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(userr?.type)}`}>
-                                                    {userr?.type}
+                                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(userr?.group?.groupName)}`}>
+                                                    {userr?.group?.groupName}
                                                   </span>
                                                     <span
                                                         className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(userr?.status)}`}>
@@ -1410,7 +1431,7 @@ const UserManagement: React.FC = () => {
                                                     <span>{userr?.email} . {userr?.branchName} </span>
                                                 </div>
 
-                                                {userr.description && (
+                                                {userr.description && userr.description.length>1 && (
                                                     <div
                                                         className=" bg-coop-red-50 ounded-lg">
                                                         <p className="text-sm text-coop-green-800">
@@ -1424,12 +1445,12 @@ const UserManagement: React.FC = () => {
 
                                                     {userr.dateCreated && (
                                                         <div className="flex items-center text-gray-600">
-                                                            Created: {new Date(userr.dateCreated).toLocaleDateString()}
+                                                            Created: {formatDateTime(userr.dateCreated)}
                                                         </div>
                                                     )}
                                                     {userr.dateApproved && (
                                                         <div className="flex items-center text-gray-600">
-                                                            Updated: {new Date(userr.dateApproved).toLocaleDateString()}
+                                                            Updated: {formatDateTime(userr.dateApproved)}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1490,8 +1511,8 @@ const UserManagement: React.FC = () => {
                                                         <span>Approve/Reject</span>
                                                     </button>
                                                 )}
-                                                {(userr?.group?.groupName?.toUpperCase() === 'PARTNER' || userr?.group?.groupName?.toUpperCase() === 'CLERK') &&
-                                                    (userr?.status?.toUpperCase() === 'ACTIVE' || userr?.status?.toUpperCase() === 'APPROVED') && hasPermission(PERMISSIONS.AESU) && (
+                                                {((userr?.group?.groupName?.toUpperCase() === 'PARTNER' || userr?.group?.groupName?.toUpperCase() === 'CLERK') &&
+                                                    (userr?.status?.toUpperCase() === 'ACTIVE' || userr?.status?.toUpperCase() === 'APPROVED') && hasPermission(PERMISSIONS.AESU)) && (
                                                         <button
                                                             onClick={() => assignEvents(userr)}
                                                             className="bg-coop-100 text-coop-500 px-3 py-2 rounded-lg hover:bg-coop-200 transition-colors flex items-center space-x-1 text-sm"
@@ -1534,11 +1555,9 @@ const UserManagement: React.FC = () => {
                         ) : (
                             <div className="p-12 text-center">
                                 {loadingData ? (
-                                    <div className="flex justify-center items-center">
-                                        <div
-                                            className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-t-transparent">
-                                        </div>
-                                    </div>
+                                    <DataLoader isLoading={loadingData}/>
+
+
 
 
                                 ) : (

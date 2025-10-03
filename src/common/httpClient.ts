@@ -73,24 +73,24 @@ function HttpClient() {
             }
 
             const contentType = response.headers['content-type'] || '';
-
-            if (response.data instanceof ArrayBuffer) {
-                const decoder = new TextDecoder('utf-8');
-                const text = decoder.decode(response.data);
-                return JSON.parse(text);
-            }
-
-            // if (contentType.includes('application/json')) {
-            //     // If the response is JSON, parse and return it
             //
-            //     try {
-            //         const decoder = new TextDecoder('utf-8');
-            //         const text = decoder.decode(response.data);
-            //         return JSON.parse(text);
-            //     } catch (err) {
-            //         console.error(err);
-            //     }
+            // if (response.data instanceof ArrayBuffer) {
+            //     const decoder = new TextDecoder('utf-8');
+            //     const text = decoder.decode(response.data);
+            //     return JSON.parse(text);
             // }
+
+            if (contentType.includes('application/json')) {
+                // If the response is JSON, parse and return it
+
+                try {
+                    const decoder = new TextDecoder('utf-8');
+                    const text = decoder.decode(response.data);
+                    return JSON.parse(text);
+                } catch (err) {
+                    return response.data
+                }
+            }
 
 
             return response.data

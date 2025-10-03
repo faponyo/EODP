@@ -40,6 +40,8 @@ function eventService() {
         },
 
 
+
+
         approveEvent(data: { id: string; remarks: string; approved: boolean }) {
             return HttpClient.post(API_URL + "/approveEvent",
                 data, {

@@ -27,7 +27,7 @@ import checkInService from "../services/CheckIn.ts";
 import {useEventContext} from "../common/useEventContext.tsx";
 import {showError, showSuccess} from "../common/Toaster.ts";
 import {useAuthContext} from "../common/useAuthContext.tsx";
-import {PERMISSIONS} from "../common/constants.ts";
+import {formatDateTime, PERMISSIONS} from "../common/constants.ts";
 import DataLoader from './DataLoader.tsx';
 
 
@@ -970,9 +970,27 @@ const EventManagement: React.FC = () => {
                         </div>
                     }
 
+
+                    <div className="justify-items-end">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                fetchData(currentPage, pageSize, preSelectedEvent?.id)
+
+
+                            }}
+                            disabled={loadingData}
+                            className="bg-coop-orange-400 text-white px-4 py-2 rounded-lg hover:bg-info-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                        >
+
+                            <span>{'Reload'}</span>
+                        </button>
+                    </div>
+
+
                 </div>
 
-                <div className="grid gap-6 relative h-64 border rounded-lg bg-gray-50 ">
+                <div className="divide-y divide-gray-200 relative ">
                     {loadingData ? (
                         <DataLoader isLoading={loadingData}/>
                     ) : (
@@ -1035,46 +1053,54 @@ const EventManagement: React.FC = () => {
 
                                                             </div>
                                                         )}
-                                                        {event.createdBy && (
-                                                            <div className="flex items-center text-gray-600">
-                                                                <PenLine className="h-4 w-4 mr-2"/>
-                                                                <span>CreatedBy: {event.createdBy.fullName} </span>
-                                                            </div>
-                                                        )}
 
-                                                        {event.updatedBy && (
-                                                            <div className="flex items-center text-gray-600">
-                                                                <RefreshCcw className="h-4 w-4 mr-2"/>
-                                                                <span>UpdatedBy: {event.updatedBy.fullName} </span>
-                                                            </div>
-                                                        )}
+                                                        {hasPermission(PERMISSIONS.VAE) && (<>
+                                                            {event.createdBy && (
+                                                                <div className="flex items-center text-gray-600">
+                                                                    <PenLine className="h-4 w-4 mr-2"/>
+                                                                    <span>CreatedBy: {event.createdBy.fullName} </span>
+                                                                </div>
+                                                            )}
+
+                                                            {event.updatedBy && (
+                                                                <div className="flex items-center text-gray-600">
+                                                                    <RefreshCcw className="h-4 w-4 mr-2"/>
+                                                                    <span>UpdatedBy: {event.updatedBy.fullName} </span>
+                                                                </div>
+                                                            )}
+                                                        </>)
+                                                        }
 
 
                                                     </div>
 
-                                                    {/*{event.description && (*/}
-                                                    {/*    <p className="text-gray-600 mb-4">{`${event.description}${!!event.createdBy ? ` . CreatedBy: ${event.createdBy.fullName}` : ''}${!!event.updatedBy ? ` . UpdatedBy: ${event.updatedBy.fullName}` : ''}`}</p>*/}
-                                                    {/*)}*/}
 
-                                                    <div className="flex items-center mt-2 text-sm text-gray-500">
-                                                        <Calendar className="h-4 w-4 mr-2"/>
-                                                        <span>CreatedAt: {new Date(event.dateCreated).toLocaleDateString()}</span>
-                                                        {event.approvalDate && (
-                                                            <span className="ml-4">
-                            • ApprovedOn: {new Date(event.approvalDate).toLocaleDateString()}
+                                                    {hasPermission(PERMISSIONS.VAE) && (<>
+
+
+                                                            <div
+                                                                className="flex items-center mt-2 text-sm text-gray-500">
+                                                                <Calendar className="h-4 w-4 mr-2"/>
+                                                                <span>CreatedAt: {formatDateTime(event.dateCreated)}</span>
+                                                                {event.approvalDate && (
+                                                                    <span className="ml-4">
+                            • ApprovedOn: {formatDateTime(event.approvalDate)}
                           </span>
-                                                        )}
+                                                                )}
 
-                                                    </div>
-                                                    {event.status === 'REJECTED' && event.approvalRemarks && (
-                                                        <div
-                                                            className="mt-2 p-3 bg-coop-red-50 border border-coop-red-200 rounded-lg">
-                                                            <p className="text-sm text-coop-red-800">
-                                                                <strong>Rejection
-                                                                    Reason:</strong> {event.approvalRemarks}
-                                                            </p>
-                                                        </div>
-                                                    )}
+                                                            </div>
+                                                            {event.status === 'REJECTED' && event.approvalRemarks && (
+                                                                <div
+                                                                    className="mt-2 p-3 bg-coop-red-50 border border-coop-red-200 rounded-lg">
+                                                                    <p className="text-sm text-coop-red-800">
+                                                                        <strong>Rejection
+                                                                            Reason:</strong> {event.approvalRemarks}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )
+                                                    }
 
                                                     {event.hasVouchers && event.voucherCategories && event.voucherCategories.length > 0 && (
                                                         <div className="mb-4 mt-4">
@@ -1137,17 +1163,25 @@ const EventManagement: React.FC = () => {
                                 })
                             ) : (
                                 <div className="text-center py-12">
-                                    <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4"/>
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-                                    <p className="text-gray-600 mb-6">Create your first event to get started</p>
-                                    {hasPermission(PERMISSIONS.CME) && (
-                                        <button
-                                            onClick={() => setShowForm(true)}
-                                            className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors"
-                                        >
-                                            Create Event
-                                        </button>
-                                    )}
+                                    {loadingData ? (
+                                        <DataLoader isLoading={loadingData}/>
+
+
+                                    ) : (
+                                        <>
+                                            <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4"/>
+                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
+                                            <p className="text-gray-600 mb-6">Create your first event to get started</p>
+                                            {hasPermission(PERMISSIONS.CME) && (
+                                                <button
+                                                    onClick={() => setShowForm(true)}
+                                                    className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors"
+                                                >
+                                                    Create Event
+                                                </button>
+
+                                            )}
+                                        </>)}
                                 </div>
                             )} </>)
                     }

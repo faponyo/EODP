@@ -18,6 +18,7 @@ import {PaginationProps} from '../types';
 import eventService from "../services/Events.ts";
 import checkInService from "../services/CheckIn.ts";
 import apiUtilityService from "../services/Utility.ts";
+import subsidiaryService from "../services/Subsidiaries.ts";
 import EPagination from "../common/EPagination.tsx";
 import {useSearch} from '../hooks/useSearch';
 import {useEventContext} from "../common/useEventContext.tsx";
@@ -35,6 +36,8 @@ const AttendeeManagement: React.FC
 
     const [showForm, setShowForm] = useState(false);
     const [events, setEvents] = useState<Record[]>([])
+    const [subsidiaries, setSubsidiaries] = useState<Record[]>([])
+
     const [assignedVouchers, setAssignedVouchers] = useState<Record[]>([])
 
     const [eventsWithAttendee, setEventsWithAttendees] = useState<Record[]>([])
@@ -68,6 +71,8 @@ const AttendeeManagement: React.FC
         email: '',
         phone: '',
         department: '',
+        subsidiary: false,
+        subsidiaryCode: '',
     });
 
     // Search functionality
@@ -86,6 +91,8 @@ const AttendeeManagement: React.FC
             email: '',
             phone: '',
             department: '',
+            subsidiary: false,
+            subsidiaryCode: ''
         })
 
     }
@@ -103,6 +110,23 @@ const AttendeeManagement: React.FC
                 if (data?.length > 0) {
                     setSelectedEvent(data[0].id)
                 }
+
+
+            }
+        ).catch(error => {
+            console.log(error)
+
+
+        });
+    }
+
+    const fetchSubsidiaryData = async () => {
+
+
+        await subsidiaryService.getSubsidiaries().then(
+            data => {
+                console.log(data)
+                setSubsidiaries(data)
 
 
             }
@@ -148,6 +172,8 @@ const AttendeeManagement: React.FC
 
             setAttendeeEvent(preSelectedEvent.id)
         }
+
+        fetchSubsidiaryData();
     }, []);
 
 
@@ -223,14 +249,11 @@ const AttendeeManagement: React.FC
                 if (!(result?.length > 0)) {
                     resetForm()
                     // Retrieve Data
-                    if (!preSelectedEvent) {
-                        fetchEventsWithAttendees();
+                    // if (!preSelectedEvent) {
+                    //     fetchEventsWithAttendees();
+                    //
+                    // }
 
-                    }
-                    if (reloadData) {
-                        fetchData(1, pageSize, attendeeEvent, selectedFilterBy, filterValue)
-
-                    }
                 } else {
                     setAssignedVouchers(result)
                 }
@@ -274,9 +297,8 @@ const AttendeeManagement: React.FC
         setLookupSuccess(false);
 
         try {
-            // const result = await lookupUserByPF(formData.pfNumber.trim());
 
-            const result = await lookupUserByPFForUserManagement(formData.pfNumber.trim());
+            const result = await lookupUserByPFForUserManagement( formData.subsidiary?formData.subsidiaryCode.trim()+'-'+formData.pfNumber.trim():formData.pfNumber.trim());
 
             if (result) {
                 setFormData(prev => ({
@@ -284,6 +306,7 @@ const AttendeeManagement: React.FC
                     name: result!.name,
                     department: result!.branchCode + ':' + result!.branchName || prev.department,
                     email: result!.email,
+                    phone: ''
 
                 }));
                 setLookupSuccess(true);
@@ -331,43 +354,71 @@ const AttendeeManagement: React.FC
 
         if (!event) return false;
 
-        const eventDate = new Date(event.date);
         const today = new Date();
-
-        // Set both dates to start of day for accurate comparison
-        eventDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
+
+        const start = new Date(event.date);
+        const end = new Date(event.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
 
         // return eventDate.getTime() === today.getTime();
-        return true;
+        return (today >= start && today <= end);
 
 
     };
 
-    const getRegistrationStatus = (eventId: number) => {
-        const event = events.find(e => e.id == eventId);
-        if (!event) return {canRegister: false, message: 'Event not found'};
+    const getRegistrationStatus = (event: { date: string; endDate: string; name?: string }) => {
+        if (!event || !event.date || !event.endDate) {
+            return {canRegister: false, message: 'Invalid event data'};
+        }
 
-        const eventDate = new Date(event.date);
         const today = new Date();
-
-        eventDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
 
-        // if (eventDate.getTime() === today.getTime()) {
-        //     return {canRegister: true, message: 'Registration is open today!'};
-        // } else if (eventDate.getTime() > today.getTime()) {
-        //     const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        //     return {
-        //         canRegister: false,
-        //         message: `Registration opens on ${eventDate.toLocaleDateString()} (${daysUntil} day${daysUntil === 1 ? '' : 's'} from now)`
-        //     };
-        // } else {
-        //     return {canRegister: false, message: 'Registration has closed for this event'};
-        // }
+        const start = new Date(event.date);
+        const end = new Date(event.endDate);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
 
-        return true
+        if (today >= start && today <= end) {
+            return {canRegister: true, message: 'Registration is currently open!'};
+        } else if (today < start) {
+            const daysUntil = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return {
+                canRegister: false,
+                message: `Registration opens on ${start.toLocaleDateString()} (${daysUntil} day${daysUntil === 1 ? '' : 's'} from now)`
+            };
+        } else {
+            return {canRegister: false, message: 'Registration has closed for this event'};
+        }
     };
+
+
+    // const getRegistrationStatus = (eventId: number) => {
+    //     const event = events.find(e => e.id == eventId);
+    //     if (!event) return {canRegister: false, message: 'Event not found'};
+    //
+    //     const eventDate = new Date(event.date);
+    //     const today = new Date();
+    //
+    //     eventDate.setHours(0, 0, 0, 0);
+    //     today.setHours(0, 0, 0, 0);
+    //
+    //     // if (eventDate.getTime() === today.getTime()) {
+    //     //     return {canRegister: true, message: 'Registration is open today!'};
+    //     // } else if (eventDate.getTime() > today.getTime()) {
+    //     //     const daysUntil = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    //     //     return {
+    //     //         canRegister: false,
+    //     //         message: `Registration opens on ${eventDate.toLocaleDateString()} (${daysUntil} day${daysUntil === 1 ? '' : 's'} from now)`
+    //     //     };
+    //     // } else {
+    //     //     return {canRegister: false, message: 'Registration has closed for this event'};
+    //     // }
+    //
+    //     return true
+    // };
 
     // Reset pagination when filters change
     // React.useEffect(() => {
@@ -558,7 +609,7 @@ const AttendeeManagement: React.FC
                                         {(formData.eventId || (preSelectedEvent)) && (
                                             <div className="mt-2">
                                                 {(() => {
-                                                    const eventId = preSelectedEvent ? preSelectedEvent.id : formData.eventId;
+                                                    const eventId = preSelectedEvent ? preSelectedEvent : events.find(event => event.id == formData.eventId);
                                                     const status = getRegistrationStatus(eventId);
                                                     return (
                                                         <p className={`text-sm ${status.canRegister ? 'text-green-600' : 'text-yellow-600'}`}>
@@ -569,6 +620,78 @@ const AttendeeManagement: React.FC
                                             </div>
                                         )}
                                     </div>
+                                    <div className="flex space-x-6">
+                                        {/* Checkbox 1 */}
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id="subsidiary1"
+                                                checked={!formData.subsidiary}
+                                                onChange={(e) => {
+                                                    const subsidiary = !e.target.checked;
+                                                    setFormData({
+                                                        ...formData,
+                                                        subsidiary,
+                                                    });
+                                                }}
+                                                className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
+                                            />
+                                            <label htmlFor="subsidiary1"
+                                                   className="flex items-center text-sm font-medium text-gray-700 ml-2">
+                                                <TicketIcon className="h-4 w-4 mr-2"/>
+                                                {'Co-op Bank'}
+                                            </label>
+                                        </div>
+
+                                        {/* Checkbox 2 */}
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id="subsidiary2"
+                                                checked={formData.subsidiary}
+                                                onChange={(e) => {
+                                                    const subsidiary = e.target.checked;
+                                                    setFormData({
+                                                        ...formData,
+                                                        subsidiary,
+                                                    });
+                                                }}
+                                                className="rounded border-gray-300 text-coop-600 focus:ring-coop-500"
+                                            />
+                                            <label htmlFor="subsidiary2"
+                                                   className="flex items-center text-sm font-medium text-gray-700 ml-2">
+                                                <TicketIcon className="h-4 w-4 mr-2"/>
+                                                {'Subsidiary'}
+                                            </label>
+                                        </div>
+                                    </div>
+
+
+                                    {formData.subsidiary && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Select Subsidiary *
+                                            </label>
+
+                                            <select
+                                                required
+                                                value={formData.subsidiaryCode}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    subsidiaryCode: e.target.value
+                                                })}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coop-500 focus:border-coop-500"
+                                            >
+                                                <option value="">Choose a subsidiary...</option>
+                                                {subsidiaries.map((event) => (
+                                                    <option key={event.id} value={event.code}>
+                                                        {event.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                        </div>
+                                    )}
 
                                     {/* PF Number Lookup */}
                                     <div>
@@ -587,7 +710,7 @@ const AttendeeManagement: React.FC
                                             <button
                                                 type="button"
                                                 onClick={handlePFLookup}
-                                                disabled={!formData.pfNumber.trim() || isRetrievingUser}
+                                                disabled={!formData.pfNumber.trim() || isRetrievingUser || (formData.subsidiary && !formData.subsidiaryCode.trim())}
                                                 className="bg-coop-600 text-white px-4 py-2 rounded-lg hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
                                             >
                                                 {isRetrievingUser ? (
@@ -719,7 +842,7 @@ const AttendeeManagement: React.FC
                                             type="submit"
                                             disabled={preSelectedEvent ?
                                                 !isEventRegistrationOpen(preSelectedEvent.id) || !lookupSuccess :
-                                                !formData.eventId || !isEventRegistrationOpen(formData.eventId) || !lookupSuccess}
+                                                !formData.eventId || !isEventRegistrationOpen(formData.eventId) || !lookupSuccess || (formData.subsidiary && !formData.subsidiaryCode.trim())}
                                             className="bg-coop-600 text-white px-6 py-2 rounded-lg hover:bg-coop-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                                         >
                                             CheckIn Attendee
@@ -736,7 +859,7 @@ const AttendeeManagement: React.FC
 
             {/* Search and Filter */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Events</label>
                         <select
@@ -801,6 +924,27 @@ const AttendeeManagement: React.FC
                             </button>
                         </div>
                     </div>
+
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">.</label>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    fetchData(1, pageSize, attendeeEvent, selectedFilterBy, filterValue)
+
+
+                                }}
+                                disabled={loadingData}
+                                className="bg-coop-orange-400 text-white px-4 py-2 rounded-lg hover:bg-info-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                            >
+
+                                <span>{'Reload'}</span>
+                            </button>
+                        </div>
+
+                    </div>
                 </div>
 
                 {(searchTerm || selectedFilterBy) && (
@@ -858,7 +1002,7 @@ const AttendeeManagement: React.FC
                         <DataLoader isLoading={loadingData}/>
                     ) : (
                         <>
-                            { (hasPermission(PERMISSIONS.VA) || hasPermission(PERMISSIONS.VAEA)) && attendees.length > 0 ? (
+                            {(hasPermission(PERMISSIONS.VA) || hasPermission(PERMISSIONS.VAEA)) && attendees.length > 0 ? (
                                 attendees.map((attendee) => {
                                     const voucher = attendee.voucherId;
                                     return (
@@ -878,6 +1022,7 @@ const AttendeeManagement: React.FC
                         </span>
                                                     </div>
 
+                                                    {hasPermission(PERMISSIONS.VA) && ( <>
                                                     <div
                                                         className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                                                         <div className="flex items-center">
@@ -921,7 +1066,9 @@ const AttendeeManagement: React.FC
                                                                     className={"truncate"}> SubmittedBy: {attendee.submittedBy?.fullName}</span>
                                                             </div>
                                                         )}
+
                                                     </div>
+                                                    </>)}
 
 
                                                 </div>
@@ -975,7 +1122,7 @@ const AttendeeManagement: React.FC
                                                                             </div>
                                                                         )}
                                                                         {
-                                                                            v.claimedNumber==0 && (
+                                                                            v.claimedNumber == 0 && (
                                                                                 <div
                                                                                     className="mt-1 text-xs bg-coop-400 text-coop-800 px-2 py-1 rounded text-center">
                                                                                     Not Used
@@ -984,7 +1131,7 @@ const AttendeeManagement: React.FC
 
                                                                         }
                                                                         {
-                                                                            !v.fullyClaimed && v.claimedNumber>0 && (
+                                                                            !v.fullyClaimed && v.claimedNumber > 0 && (
                                                                                 <div
                                                                                     className="mt-1 text-xs bg-coop-300 text-coop-800 px-2 py-1 rounded text-center">
                                                                                     Partially Used
